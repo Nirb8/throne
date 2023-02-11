@@ -38,12 +38,12 @@ async def join(ctx):
 @bot.hybrid_command()
 async def leave(ctx):
     player = ctx.message.author.name
-    print(f'Leave command run by user: {player}')
-    if player in player_list :
+    if player in player_list:
+        print(f'Leave command run by user: {player}')
         player_list.remove(player)
         await respond(ctx, 'You have left the ongoing game')
         return
-    await respond(ctx, 'You were not already in the ongoing game. Use /join to join')
+    await respond(ctx, "You aren't in the current game!")
 
 @bot.hybrid_command()
 async def listp(ctx):
