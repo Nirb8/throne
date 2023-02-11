@@ -12,7 +12,7 @@ load_dotenv()
 intents = discord.Intents.default()
 intents.message_content = True
 
-
+player_list = []
 
 bot = commands.Bot(command_prefix='$', intents=intents)
 
@@ -23,8 +23,20 @@ async def sync(ctx):
 @bot.hybrid_command()
 async def ping(ctx):
     await ctx.interaction.response.send_message(content = 'pong', ephemeral = True)
-    # await ctx.send(content = 'pong', ephemeral = True)
+@bot.hybrid_command()
+async def join(ctx):
+    print('join command run by user: ')
+    print(ctx.message.author.name)
+    new_player = ctx.message.author.name
+    if new_player in player_list:
+        await ctx.interaction.response.send_message(content = "You are already in the game!")
+        return
+    player_list.append(new_player)
+    await ctx.interaction.response.send_message(content = 'You have joined the ongoing game as ' + new_player, ephemeral = True)
+@bot.hybrid_command()
+async def listp(ctx):
+    print(player_list)
+    await ctx.interaction.response.send_message(content = player_list)
 
-# client = MyClient(intents=intents)
-# client.run(os.environ['TOKEN'])
+
 bot.run(os.environ['TOKEN'])
