@@ -23,6 +23,7 @@ async def sync(ctx):
 @bot.hybrid_command()
 async def ping(ctx):
     await ctx.interaction.response.send_message(content = 'pong', ephemeral = True)
+
 @bot.hybrid_command()
 async def join(ctx):
     print('join command run by user: ')
@@ -33,10 +34,20 @@ async def join(ctx):
         return
     player_list.append(new_player)
     await ctx.interaction.response.send_message(content = 'You have joined the ongoing game as ' + new_player, ephemeral = True)
+
+@bot.hybrid_command()
+async def leave(ctx):
+    player = ctx.message.author.name
+    print(f'Leave command run by user: {player}')
+    player_list.remove(player)
+    await respond(ctx, 'You have left the ongoing game')
+
 @bot.hybrid_command()
 async def listp(ctx):
     print(player_list)
     await ctx.interaction.response.send_message(content = player_list)
 
+async def respond(ctx, response):
+    await ctx.interaction.response.send_message(content=response, ephemeral=True)
 
 bot.run(os.environ['TOKEN'])
