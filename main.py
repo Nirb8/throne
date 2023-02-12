@@ -2,7 +2,8 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-
+import shuffle
+import cards
 load_dotenv()
 
 # class MyClient(discord.Client):
@@ -19,6 +20,7 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 
 @bot.command()
 async def sync(ctx):
+    print("syncing slash commands...")
     synced = await ctx.bot.tree.sync()
 
 @bot.hybrid_command()
@@ -90,6 +92,16 @@ async def rmplayer(ctx, player_name):
 async def listp(ctx):
     print(player_list)
     await respond_global(ctx = ctx, response = player_list)
+
+
+@bot.hybrid_command()
+async def deckme(ctx):
+    deck = shuffle.get_shuffled_deck_numeric(2)
+    deck_string = ""
+    for card in deck.values():
+        print(card)
+        deck_string += cards.get_emote(card)
+    await respond_global(ctx = ctx, response = deck_string)
 
 async def respond_ghost(ctx, response):
     await ctx.interaction.response.send_message(content=response, ephemeral=True)

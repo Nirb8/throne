@@ -30,3 +30,23 @@ def shuffle_and_deal(num_players, num_jokers = 2):
 #     for hand in hands:
 #         print(f"{hand} \n{len(hand)}")
 #     print(f"Leftover: {leftover}")
+
+
+def get_shuffled_deck_numeric(num_jokers):
+    decktionary = {}
+    card_id = 0
+    for i in range(4):
+        for j in range(13):
+            decktionary[card_id] = {"suit": i, "rank" : j}
+            card_id += 1
+    jokerSuit = -1
+    for k in range(num_jokers):
+        decktionary[card_id] = {"suit":jokerSuit, "rank":-1}
+        if jokerSuit == -1:
+            jokerSuit = -2
+        else:
+            jokerSuit = -1
+        card_id += 1
+    random.shuffle(decktionary)
+    print(decktionary)
+    return decktionary
