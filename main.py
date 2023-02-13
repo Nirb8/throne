@@ -119,9 +119,16 @@ async def get_hands(ctx, deck):
     hands_value = shuffle.deal(num_players, deck)
     i = 0
     for player in player_list:
-        player_hands[player] = hands_value[0][i]
+        sorted_hand = await sort_hand(hands_value[0][i], False)
+        player_hands[player] = sorted_hand
         i += 1
     await respond_global(ctx = ctx, response=hands_value)
+
+async def sort_hand(hand, in_revolution):
+    res= sorted(hand,key=lambda card: card['suit'],     reverse = in_revolution)
+    res = sorted(hand,key=lambda card: card['rank'],     reverse = in_revolution)
+    return res
+
 @bot.hybrid_command()
 async def sh(ctx):
     new_player = ctx.message.author.name
@@ -133,7 +140,14 @@ async def sh(ctx):
         await respond_ghost(ctx = ctx, response = "Not in game")
         return
     deck_string = ""
+    prev_card = []
     for card in player_hands[new_player]:
+        prev_card = card
+        break
+    for card in player_hands[new_player]:
+        if card["rank"] != prev_card["rank"]:
+            deck_string+="   "
+        prev_card = card
         deck_string += cards.get_emote(card)
     await respond_ghost(ctx = ctx, response = deck_string)
     
