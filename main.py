@@ -14,6 +14,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 player_list = []
+player_hands = {}
 game_in_progress = False
 
 bot = commands.Bot(command_prefix='$', intents=intents)
@@ -62,6 +63,16 @@ async def join(ctx):
         return
     await respond_ghost(ctx=ctx,response="Can't join a game in progress")
 
+@bot.hybrid_command()
+async def addplayer(ctx, new_player):
+    if not game_in_progress:
+        if new_player in player_list:
+            await respond_ghost(ctx = ctx, response = f"{new_player} is already in the game!")
+            return
+        player_list.append(new_player)
+        await respond_ghost(ctx = ctx, response = f'Added {new_player} to the game')
+        return
+    await respond_ghost(ctx=ctx,response="Can't join a game in progress")
 
 @bot.hybrid_command()
 async def leave(ctx):
@@ -101,8 +112,31 @@ async def deckme(ctx):
     for card in deck.values():
         print(card)
         deck_string += cards.get_emote(card)
-    await respond_global(ctx = ctx, response = deck_string)
+    await get_hands(ctx, deck)
 
+async def get_hands(ctx, deck):
+    num_players = len(player_list)
+    hands_value = shuffle.deal(num_players, deck)
+    i = 0
+    for player in player_list:
+        player_hands[player] = hands_value[0][i]
+        i += 1
+    await respond_global(ctx = ctx, response=hands_value)
+@bot.hybrid_command()
+async def sh(ctx):
+    new_player = ctx.message.author.name
+    print(f'show hand command run by user: {new_player}')
+    if not game_in_progress:
+        await respond_ghost(ctx=ctx,response="Game hasn't started yet")
+        return
+    if new_player not in player_list:
+        await respond_ghost(ctx = ctx, response = "Not in game")
+        return
+    deck_string = ""
+    for card in player_hands[new_player]:
+        deck_string += cards.get_emote(card)
+    await respond_ghost(ctx = ctx, response = deck_string)
+    
 async def respond_ghost(ctx, response):
     await ctx.interaction.response.send_message(content=response, ephemeral=True)
 
