@@ -29,9 +29,15 @@ async def ping(ctx):
     await ctx.interaction.response.send_message(content = 'pong', ephemeral = True)
 
 @bot.hybrid_command()
-async def start(ctx):
+async def start(ctx, jokers = 0):
     global game_in_progress
     if not game_in_progress:
+        deck = shuffle.get_shuffled_deck_numeric(jokers)
+        deck_string = ""
+        for card in deck.values():
+            print(card)
+            deck_string += cards.get_emote(card)
+        await get_hands(ctx, deck)
         game_in_progress = True
         await respond_global(ctx=ctx,response="THE GAME HAS STARTED") #TODO: Print out the standings
         return
@@ -59,7 +65,7 @@ async def join(ctx):
             await respond_ghost(ctx = ctx, response = "You are already in the game!")
             return
         player_list.append(new_player)
-        await respond_ghost(ctx = ctx, response = f'You have joined the ongoing game as {new_player}')
+        await respond_global(ctx = ctx, response = f'Player: {new_player} has joined the game!')
         return
     await respond_ghost(ctx=ctx,response="Can't join a game in progress")
 
@@ -104,31 +110,6 @@ async def listp(ctx):
     print(player_list)
     await respond_global(ctx = ctx, response = player_list)
 
-
-@bot.hybrid_command()
-async def deckme(ctx):
-    deck = shuffle.get_shuffled_deck_numeric(2)
-    deck_string = ""
-    for card in deck.values():
-        print(card)
-        deck_string += cards.get_emote(card)
-    await get_hands(ctx, deck)
-
-async def get_hands(ctx, deck):
-    num_players = len(player_list)
-    hands_value = shuffle.deal(num_players, deck)
-    i = 0
-    for player in player_list:
-        sorted_hand = await sort_hand(hands_value[0][i], False)
-        player_hands[player] = sorted_hand
-        i += 1
-    await respond_global(ctx = ctx, response=hands_value)
-
-async def sort_hand(hand, in_revolution):
-    res= sorted(hand,key=lambda card: card['suit'],     reverse = in_revolution)
-    res = sorted(hand,key=lambda card: card['rank'],     reverse = in_revolution)
-    return res
-
 @bot.hybrid_command()
 async def sh(ctx):
     new_player = ctx.message.author.name
@@ -156,5 +137,18 @@ async def respond_ghost(ctx, response):
 
 async def respond_global(ctx, response):
     await ctx.interaction.response.send_message(content=response)
+
+async def get_hands(deck):
+    num_players = len(player_list)
+    hands_value, leftover = shuffle.deal(num_players, deck)
+    i = 0
+    for player in player_list:
+        sorted_hand = await sort_hand(hands_value[i], False)
+        player_hands[player] = sorted_hand
+        i += 1
+
+async def sort_hand(hand, in_revolution):
+    res= sorted(hand,key=lambda card: (card['rank'], card['suit']), reverse = in_revolution)
+    return res
 
 bot.run(os.environ['TOKEN'])
