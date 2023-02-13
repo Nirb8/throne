@@ -2,35 +2,37 @@ EMOTE_LIST = ["<:A_hearts:1073878545455124571>", "<:2_hearts:1073878461053161472
 
 #TODO: make a rank -> Emote Rank and Suite -> Emote Suite Dict
 
+rank_dict = {
+    12: "2",
+    11: "A",
+    10: "K",
+    9: "Q",
+    8: "J",
+}
+
+suite_dict = {
+    0: 'clubs',
+    1: 'diamonds',
+    2: 'hearts',
+    3: 'spades'
+}
+
 def get_emote(card):
     if card["suit"] == -1:
         return "<:R_red:1073878240101412874>"
     if card["suit"] == -2:
         return "<:R_black:1073878238457233418>"
     emoji_string = ""
-    if card["rank"] == 12:
-        emoji_string += "2"
-    if card["rank"] == 11:
-        emoji_string += "A"
-    if card ["rank"] == 10:
-        emoji_string += "K"
-    if card["rank"] == 9:
-        emoji_string += "Q"
-    if card["rank"] == 8:
-        emoji_string += "J"
-    if card["rank"] < 8:
+    if card['rank'] not in rank_dict.keys():
         real_value = card["rank"] + 3
         emoji_string += str(real_value)
+    else:
+        emoji_string += rank_dict[card['rank']]
     emoji_string += "_"
     # append suit
-    if card["suit"] == 0:
-        emoji_string += "clubs"
-    if card["suit"] == 1:
-        emoji_string += "diamonds"
-    if card["suit"] == 2:
-        emoji_string += "hearts"
-    if card["suit"] == 3:
-        emoji_string += "spades"
+    if card['suit'] not in suite_dict.keys():
+        return "💀"
+    emoji_string += suite_dict[card['suit']]
 
     for card_emote in EMOTE_LIST:
         if emoji_string in card_emote:

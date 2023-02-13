@@ -37,7 +37,7 @@ async def start(ctx, jokers = 0):
         for card in deck.values():
             print(card)
             deck_string += cards.get_emote(card)
-        await get_hands(ctx, deck)
+        await get_hands(deck)
         game_in_progress = True
         await respond_global(ctx=ctx,response="THE GAME HAS STARTED") #TODO: Print out the standings
         return
@@ -76,7 +76,7 @@ async def addplayer(ctx, new_player):
             await respond_ghost(ctx = ctx, response = f"{new_player} is already in the game!")
             return
         player_list.append(new_player)
-        await respond_ghost(ctx = ctx, response = f'Added {new_player} to the game')
+        await respond_global(ctx = ctx, response = f'Added {new_player} to the game')
         return
     await respond_ghost(ctx=ctx,response="Can't join a game in progress")
 
