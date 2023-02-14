@@ -16,6 +16,10 @@ intents.message_content = True
 player_list = []
 player_hands = {}
 game_in_progress = False
+current_player = ""
+current_trick = []
+num_cards_to_play = 0
+rank_to_play = 0
 
 bot = commands.Bot(command_prefix='$', intents=intents)
 
@@ -47,18 +51,28 @@ async def p(ctx, arg):
     if player not in player_list:
         await respond_ghost(ctx=ctx, response="you ain't in the game yet dummy")
         return
-    await respond_global(ctx=ctx, response="pretend these are options")
-    original_message = await ctx.interaction.original_response()
-    for card in player_hands[player]:
-        await original_message.add_reaction(cards.get_emote(card))
+    if player is not current_player:
+        await respond_ghost(ctx=ctx, response="wait your turn dummy")
+        return
+    # num cards for trick hasn't been decided yet
+    if num_cards_to_play == 0:
+        # start the trick
+        # TODO: add validation to arg being number 1-4
+        num_cards_to_play = arg
+        await respond_ghost(ctx=ctx, response=f"playing {num_cards_to_play} card(s)")
+    # original_message = await ctx.interaction.original_response()
+    # for card in player_hands[player]:
+    #     await original_message.add_reaction(cards.get_emote(card))
     
 
 @bot.hybrid_command()
-async def start(ctx, jokers = 0):
+async def start(ctx, jokers = 2):
     global game_in_progress
+    global current_player
     if not game_in_progress:
         deck = shuffle.get_shuffled_deck_numeric(jokers)
         deck_string = ""
+        current_player = player_list[0]
         for card in deck.values():
             print(card)
             deck_string += cards.get_emote(card)
