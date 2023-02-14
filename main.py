@@ -28,6 +28,23 @@ async def sync(ctx):
 async def ping(ctx):
     await ctx.interaction.response.send_message(content = 'pong', ephemeral = True)
 
+
+#this makes a button, still trying to sus it out
+# class MyView(discord.ui.View):
+#     @discord.ui.button(label='Example')
+#     async def example_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+#         print(self.children)
+#         await interaction.response.send_message('Hello!', ephemeral=True)
+#
+# @bot.hybrid_command()
+# async def david(ctx):
+#     view = MyView()
+#     view.message = await ctx.send('Press me!', view=view)
+#     msg = await ctx.send(content="hello!",ephemeral=True)
+#     msg15 = await ctx.send(content="Hello 1.5!")
+#     msg2 = await ctx.send(content="hello 2!!!!",ephemeral=True)
+
+
 @bot.hybrid_command()
 async def start(ctx, jokers = 0):
     global game_in_progress
