@@ -24,11 +24,6 @@ async def sync(ctx):
     print("syncing slash commands...")
     synced = await ctx.bot.tree.sync()
 
-@bot.hybrid_command()
-async def ping(ctx):
-    await ctx.interaction.response.send_message(content = 'pong', ephemeral = True)
-
-
 #this makes a button, still trying to sus it out
 # class MyView(discord.ui.View):
 #     @discord.ui.button(label='Example')
@@ -43,7 +38,20 @@ async def ping(ctx):
 #     msg = await ctx.send(content="hello!",ephemeral=True)
 #     msg15 = await ctx.send(content="Hello 1.5!")
 #     msg2 = await ctx.send(content="hello 2!!!!",ephemeral=True)
-
+@bot.hybrid_command()
+async def p(ctx, arg):
+    player = ctx.message.author.name
+    if game_in_progress is False:
+        await respond_ghost(ctx=ctx, response="game hasn't started yet dummy")
+        return
+    if player not in player_list:
+        await respond_ghost(ctx=ctx, response="you ain't in the game yet dummy")
+        return
+    await respond_global(ctx=ctx, response="pretend these are options")
+    original_message = await ctx.interaction.original_response()
+    for card in player_hands[player]:
+        await original_message.add_reaction(cards.get_emote(card))
+    
 
 @bot.hybrid_command()
 async def start(ctx, jokers = 0):
@@ -129,20 +137,20 @@ async def listp(ctx):
 
 @bot.hybrid_command()
 async def sh(ctx):
-    new_player = ctx.message.author.name
-    print(f'show hand command run by user: {new_player}')
+    player = ctx.message.author.name
+    print(f'show hand command run by user: {player}')
     if not game_in_progress:
         await respond_ghost(ctx=ctx,response="Game hasn't started yet")
         return
-    if new_player not in player_list:
+    if player not in player_list:
         await respond_ghost(ctx = ctx, response = "Not in game")
         return
     deck_string = ""
     prev_card = []
-    for card in player_hands[new_player]:
+    for card in player_hands[player]:
         prev_card = card
         break
-    for card in player_hands[new_player]:
+    for card in player_hands[player]:
         if card["rank"] != prev_card["rank"]:
             deck_string+="   "
         prev_card = card
