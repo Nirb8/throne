@@ -44,6 +44,8 @@ async def sync(ctx):
 #     msg2 = await ctx.send(content="hello 2!!!!",ephemeral=True)
 @bot.hybrid_command()
 async def p(ctx, arg):
+    global num_cards_to_play
+    global rank_to_play
     player = ctx.message.author.name
     if game_in_progress is False:
         await respond_ghost(ctx=ctx, response="game hasn't started yet dummy")
@@ -51,18 +53,9 @@ async def p(ctx, arg):
     if player not in player_list:
         await respond_ghost(ctx=ctx, response="you ain't in the game yet dummy")
         return
-    if player is not current_player:
+    if player != current_player:
         await respond_ghost(ctx=ctx, response="wait your turn dummy")
         return
-    # num cards for trick hasn't been decided yet
-    if num_cards_to_play == 0:
-        # start the trick
-        # TODO: add validation to arg being number 1-4
-        num_cards_to_play = arg
-        await respond_ghost(ctx=ctx, response=f"playing {num_cards_to_play} card(s)")
-    # original_message = await ctx.interaction.original_response()
-    # for card in player_hands[player]:
-    #     await original_message.add_reaction(cards.get_emote(card))
     
 
 @bot.hybrid_command()
@@ -73,6 +66,7 @@ async def start(ctx, jokers = 2):
         deck = shuffle.get_shuffled_deck_numeric(jokers)
         deck_string = ""
         current_player = player_list[0]
+        print(f"current player: {current_player}")
         for card in deck.values():
             print(card)
             deck_string += cards.get_emote(card)
