@@ -18,8 +18,6 @@ player_hands = {}
 game_in_progress = False
 current_player = ""
 current_trick = []
-num_cards_to_play = 0
-rank_to_play = 0
 
 bot = commands.Bot(command_prefix='$', intents=intents)
 
@@ -44,8 +42,7 @@ async def sync(ctx):
 #     msg2 = await ctx.send(content="hello 2!!!!",ephemeral=True)
 @bot.hybrid_command()
 async def p(ctx, arg):
-    global num_cards_to_play
-    global rank_to_play
+    
     player = ctx.message.author.name
     if game_in_progress is False:
         await respond_ghost(ctx=ctx, response="game hasn't started yet dummy")
@@ -56,7 +53,7 @@ async def p(ctx, arg):
     if player != current_player:
         await respond_ghost(ctx=ctx, response="wait your turn dummy")
         return
-    
+
 
 @bot.hybrid_command()
 async def start(ctx, jokers = 2):
