@@ -41,9 +41,10 @@ async def sync(ctx):
 #     msg15 = await ctx.send(content="Hello 1.5!")
 #     msg2 = await ctx.send(content="hello 2!!!!",ephemeral=True)
 @bot.hybrid_command()
-async def p(ctx, arg):
+async def p(ctx, rank, card_string):
     
     player = ctx.message.author.name
+    print(f"player {player} called p with rank: {rank} and card string: {card_string}")
     if game_in_progress is False:
         await respond_ghost(ctx=ctx, response="game hasn't started yet dummy")
         return
@@ -53,7 +54,27 @@ async def p(ctx, arg):
     if player != current_player:
         await respond_ghost(ctx=ctx, response="wait your turn dummy")
         return
-
+# TODO actual validation and state updating
+    cards_to_play = []
+    for c in card_string:
+        print(c)
+        if c == "c":
+            cards_to_play.append({"suit": 0, "rank": int(rank)})
+        if c == "d":
+            cards_to_play.append({"suit": 1, "rank": int(rank)})
+        if c == "h":
+            cards_to_play.append({"suit": 2, "rank": int(rank)})
+        if c == "s":
+            cards_to_play.append({"suit": 3, "rank": int(rank)})
+        if c == "j":
+            cards_to_play.append({"suit": -1, "rank": int(rank)})
+    print(cards_to_play)
+    card_string = ""
+    for card in cards_to_play:
+        card_string += cards.get_emote(card)
+    await respond_global(ctx=ctx, response=f"player {player} played: {card_string}")
+    
+        
 
 @bot.hybrid_command()
 async def start(ctx, jokers = 2):
