@@ -72,7 +72,7 @@ async def p(ctx, rank, card_string):
     card_string = ""
     for card in cards_to_play:
         card_string += cards.get_emote(card)
-    await respond_global(ctx=ctx, response=f"player {player} played: {card_string}")
+    await respond_global(ctx=ctx, response=f"{card_string}")
     
         
 
