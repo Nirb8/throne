@@ -54,6 +54,7 @@ async def p(ctx, rank, card_string):
     if player != current_player:
         await respond_ghost(ctx=ctx, response="wait your turn dummy")
         return
+    rank = cards.rank_to_num(rank)
 # TODO actual validation and state updating
     cards_to_play = []
     for c in card_string:

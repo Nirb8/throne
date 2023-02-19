@@ -15,6 +15,28 @@ suite_dict = {
     3: 'spades'
 }
 
+rank_to_num_dict = {
+    "3": 0,
+    "4": 1,
+    "5": 2,
+    "6": 3,
+    "7": 4,
+    "8": 5,
+    "9": 6,
+    "10": 7,
+    "j": 8,
+    "q": 9,
+    "k": 10,
+    "a": 11,
+    "2": 12,
+    "o": -1
+}
+def rank_to_num(rank):
+    rank_lower = rank.lower()
+    return rank_to_num_dict[rank_lower]
+
+
+
 def get_emote(card):
     if card["suit"] == -1:
         return "<:R_red:1073878240101412874>"
