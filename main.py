@@ -51,30 +51,48 @@ async def p(ctx, rank, card_string):
     if player not in player_list:
         await respond_ghost(ctx=ctx, response="you ain't in the game yet dummy")
         return
-    if player != current_player:
-        await respond_ghost(ctx=ctx, response="wait your turn dummy")
-        return
+    # taking out the turn rule for now
+    # if player != current_player:
+    #     await respond_ghost(ctx=ctx, response="wait your turn dummy")
+    #     return
     rank = cards.rank_to_num(rank)
+    if rank == -69:
+        await respond_ghost(ctx=ctx, response="invalid rank 💀")
+        return
 # TODO actual validation and state updating
     cards_to_play = []
+    club_played = False
+    diamond_played = False
+    heart_played = False
+    spade_played = False
     for c in card_string:
         print(c)
-        if c == "c":
+        if c == "c" and club_played is False:
             cards_to_play.append({"suit": 0, "rank": int(rank)})
-        if c == "d":
+            club_played = True
+        if c == "d" and diamond_played is False:
             cards_to_play.append({"suit": 1, "rank": int(rank)})
-        if c == "h":
+            diamond_played = True
+        if c == "h" and heart_played is False:
             cards_to_play.append({"suit": 2, "rank": int(rank)})
-        if c == "s":
+            heart_played = True
+        if c == "s" and spade_played is False:
             cards_to_play.append({"suit": 3, "rank": int(rank)})
+            spade_played = True
         if c == "j":
             cards_to_play.append({"suit": -1, "rank": int(rank)})
     print(cards_to_play)
+    legal = cards.verify_play(player_hands[player], cards_to_play)
+    if legal is False:
+        await respond_ghost(ctx=ctx, response="you can't play that 💀")
+        return
     card_string = ""
     for card in cards_to_play:
         card_string += cards.get_emote(card)
-    await respond_global(ctx=ctx, response=f"{card_string}")
-    
+    if card_string:
+        await respond_global(ctx=ctx, response=f"{card_string}")
+        return
+    await respond_ghost(ctx=ctx, response="actually put some cards")
         
 
 @bot.hybrid_command()

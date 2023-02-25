@@ -33,7 +33,9 @@ rank_to_num_dict = {
 }
 def rank_to_num(rank):
     rank_lower = rank.lower()
-    return rank_to_num_dict[rank_lower]
+    if rank_lower in rank_to_num_dict:
+        return rank_to_num_dict[rank_lower]
+    return -69
 
 
 
@@ -57,3 +59,26 @@ def get_emote(card):
     if emoji_string not in  EMOTE_DICT.keys():
         return "💀"
     return EMOTE_DICT[emoji_string]
+
+def verify_play(player_hand, proposed_play):
+    legal = True
+    num_jokers = 0
+    held_jokers = 0
+    for p_card in player_hand:
+        if p_card["rank"] == -1:
+            held_jokers += 1
+    for card in proposed_play:
+        found = False
+        for p_card in player_hand:
+            if p_card["rank"] == card["rank"]:
+                if p_card["rank"] == -1:
+                    num_jokers += 1
+                    break
+                if p_card["suit"] == card["suit"]:
+                    found = True
+        if found is False:
+            legal = False
+            break
+    if held_jokers < num_jokers:
+        legal = False
+    return legal
