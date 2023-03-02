@@ -17,7 +17,7 @@ player_list = []
 player_hands = {}
 game_in_progress = False
 current_player = ""
-current_trick = []
+
 
 bot = commands.Bot(command_prefix='$', intents=intents)
 
