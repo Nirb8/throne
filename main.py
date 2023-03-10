@@ -15,6 +15,7 @@ intents.message_content = True
 
 player_list = []
 player_hands = {}
+player_last_played = {}
 game_in_progress = False
 current_player = ""
 
@@ -59,7 +60,7 @@ async def p(ctx, rank, card_string):
     if rank == -69:
         await respond_ghost(ctx=ctx, response="invalid rank 💀")
         return
-# TODO actual validation and state updating
+# TODO actual validation and state updating, actually might not do this part because rules complex..
     cards_to_play = []
     club_played = False
     diamond_played = False
@@ -91,6 +92,11 @@ async def p(ctx, rank, card_string):
         card_string += cards.get_emote(card)
     if card_string:
         await respond_global(ctx=ctx, response=f"{card_string}")
+        print("deducting cards from player hand")
+        # add to last played (for undo)
+        player_last_played[player] = cards_to_play
+        for card in cards_to_play:
+            cards.remove_card(card, player_hands[player])
         return
     await respond_ghost(ctx=ctx, response="actually put some cards")
         

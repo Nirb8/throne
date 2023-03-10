@@ -36,7 +36,8 @@ def rank_to_num(rank):
     if rank_lower in rank_to_num_dict:
         return rank_to_num_dict[rank_lower]
     return -69
-
+def remove_card(card, hand):
+    hand.remove(card)
 
 
 def get_emote(card):
