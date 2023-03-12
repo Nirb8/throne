@@ -29,7 +29,8 @@ rank_to_num_dict = {
     "k": 10,
     "a": 11,
     "2": 12,
-    "o": -1
+    "o": -1,
+    "w": -1
 }
 def rank_to_num(rank):
     rank_lower = rank.lower()
@@ -37,6 +38,13 @@ def rank_to_num(rank):
         return rank_to_num_dict[rank_lower]
     return -69
 def remove_card(card, hand):
+    if card["suit"] < 0 or card["rank"] < 0:
+        # remove a joker, any joker
+        for card in hand:
+            if card["rank"] < 0:
+                hand.remove(card)
+                break
+        return
     hand.remove(card)
 
 
@@ -65,21 +73,24 @@ def verify_play(player_hand, proposed_play):
     legal = True
     num_jokers = 0
     held_jokers = 0
+    print(f"running verify play with player hand: \n{player_hand}, and proposed play: {proposed_play}")
+    
     for p_card in player_hand:
-        if p_card["rank"] == -1:
+        if p_card["rank"] < 0:
             held_jokers += 1
     for card in proposed_play:
-        found = False
         for p_card in player_hand:
+            found = False
             if p_card["rank"] == card["rank"]:
-                if p_card["rank"] == -1:
+                if p_card["rank"] < 0 or p_card["suit"] < 0:
                     num_jokers += 1
-                    break
+                    found = True
                 if p_card["suit"] == card["suit"]:
                     found = True
-        if found is False:
-            legal = False
-            break
-    if held_jokers < num_jokers:
-        legal = False
+            if found is False:
+                legal = False
+                break
+    print(f"player holding {held_jokers}, need {num_jokers}")
+    if held_jokers >= num_jokers:
+        legal = True
     return legal

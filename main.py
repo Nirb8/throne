@@ -42,8 +42,20 @@ async def sync(ctx):
 #     msg15 = await ctx.send(content="Hello 1.5!")
 #     msg2 = await ctx.send(content="hello 2!!!!",ephemeral=True)
 @bot.hybrid_command()
+async def undo(ctx):
+    player = ctx.message.author.name
+    if player_last_played[player]:
+        undo_string = ""
+        for card in player_last_played[player]:
+            player_hands[player].append(card)
+            undo_string += cards.get_emote(card)
+        player_hands[player] = await sort_hand(player_hands[player], False)
+        await respond_global(ctx=ctx, response=f"Undo: {undo_string}")
+        player_last_played[player] = None
+            
+
+@bot.hybrid_command()
 async def p(ctx, rank, card_string):
-    
     player = ctx.message.author.name
     print(f"player {player} called p with rank: {rank} and card string: {card_string}")
     if game_in_progress is False:
@@ -118,6 +130,14 @@ async def start(ctx, jokers = 2):
         await respond_global(ctx=ctx,response="THE GAME HAS STARTED") #TODO: Print out the standings
         return
     await respond_ghost(ctx=ctx,response="Game in progress dummy, don't jump the gun")
+
+@bot.hybrid_command()
+async def end(ctx):
+    global game_in_progress
+    if not game_in_progress:
+        await respond_ghost(ctx=ctx,response="Game not in progress dummy, don't jump the gun")
+        return
+    game_in_progress = False
 
 @bot.hybrid_command()
 async def screwthis(ctx):
