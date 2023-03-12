@@ -138,6 +138,7 @@ async def end(ctx):
         await respond_ghost(ctx=ctx,response="Game not in progress dummy, don't jump the gun")
         return
     game_in_progress = False
+    await respond_global(ctx=ctx,response="Ending current game and keeping current players")
 
 @bot.hybrid_command()
 async def screwthis(ctx):

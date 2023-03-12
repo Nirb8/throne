@@ -73,23 +73,24 @@ def verify_play(player_hand, proposed_play):
     legal = True
     num_jokers = 0
     held_jokers = 0
-    print(f"running verify play with player hand: \n{player_hand}, and proposed play: {proposed_play}")
     
     for p_card in player_hand:
         if p_card["rank"] < 0:
             held_jokers += 1
     for card in proposed_play:
-        for p_card in player_hand:
-            found = False
-            if p_card["rank"] == card["rank"]:
-                if p_card["rank"] < 0 or p_card["suit"] < 0:
-                    num_jokers += 1
-                    found = True
-                if p_card["suit"] == card["suit"]:
-                    found = True
-            if found is False:
-                legal = False
-                break
+        found = False
+        if card["rank"] < 0 or card["suit"] < 0:
+            num_jokers += 1
+            found = True
+        else:
+            for p_card in player_hand:
+                if p_card["rank"] == card["rank"]:
+                    if p_card["suit"] == card["suit"]:
+                        found = True
+                        break
+        if found is False:
+            legal = False
+            break
     print(f"player holding {held_jokers}, need {num_jokers}")
     if held_jokers >= num_jokers:
         legal = True
