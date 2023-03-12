@@ -52,7 +52,8 @@ async def undo(ctx):
         player_hands[player] = await sort_hand(player_hands[player], False)
         await respond_global(ctx=ctx, response=f"Undo: {undo_string}")
         player_last_played[player] = None
-            
+    else:
+        await respond_ghost(ctx=ctx, response="Can't undo!")
 
 @bot.hybrid_command()
 async def p(ctx, rank, card_string):
@@ -114,11 +115,13 @@ async def p(ctx, rank, card_string):
         
 
 @bot.hybrid_command()
-async def start(ctx, jokers = 2):
+async def start(ctx, jokers = 2, burn_cards = 0):
     global game_in_progress
     global current_player
     if not game_in_progress:
         deck = shuffle.get_shuffled_deck_numeric(jokers)
+        for i in range(0, burn_cards):
+            deck.popitem()
         deck_string = ""
         current_player = player_list[0]
         print(f"current player: {current_player}")
