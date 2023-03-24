@@ -86,12 +86,13 @@ async def give(ctx, rank, suit, recv_player):
     if legal is False:
         await respond_ghost(ctx=ctx, response="you can't play that 💀")
         return
-    await respond_global(ctx=ctx, response=f"{player} gave {len(cards_to_give)} card(s) to {recv_player}.")
     for card in cards_to_give:
+        print(card)
         cards.remove_card(card, player_hands[player])
         player_hands[recv_player].append(card)
         sorted_hand = await sort_hand(player_hands[recv_player], False)
         player_hands[recv_player] = sorted_hand
+    await respond_global(ctx=ctx, response=f"{player} gave {len(cards_to_give)} card(s) to {recv_player}.")
     return
 
 @bot.hybrid_command()
