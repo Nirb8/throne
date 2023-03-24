@@ -54,6 +54,45 @@ async def undo(ctx):
         player_last_played[player] = None
     else:
         await respond_ghost(ctx=ctx, response="Can't undo!")
+@bot.hybrid_command()
+async def give(ctx, rank, suit, recv_player):
+    player = ctx.message.author.name
+    if recv_player not in player_list:
+        await respond_ghost(ctx=ctx, response="That player doesn't exist")
+        return
+    cards_to_give = []
+    club_played = False
+    diamond_played = False
+    heart_played = False
+    spade_played = False
+    for c in suit:
+        print(c)
+        if c == "c" and club_played is False:
+            cards_to_give.append({"suit": 0, "rank": int(rank)})
+            club_played = True
+        if c == "d" and diamond_played is False:
+            cards_to_give.append({"suit": 1, "rank": int(rank)})
+            diamond_played = True
+        if c == "h" and heart_played is False:
+            cards_to_give.append({"suit": 2, "rank": int(rank)})
+            heart_played = True
+        if c == "s" and spade_played is False:
+            cards_to_give.append({"suit": 3, "rank": int(rank)})
+            spade_played = True
+        if c == "j":
+            cards_to_give.append({"suit": -1, "rank": int(rank)})
+    print(cards_to_give)
+    legal = cards.verify_play(player_hands[player], cards_to_give)
+    if legal is False:
+        await respond_ghost(ctx=ctx, response="you can't play that 💀")
+        return
+    await respond_global(ctx=ctx, response=f"{player} gave {cards_to_give.count()} card(s) to {recv_player}.")
+    for card in cards_to_give:
+        cards.remove_card(card, player_hands[player])
+        player_hands[recv_player].append(card)
+        sorted_hand = await sort_hand(player_hands[recv_player], False)
+        player_hands[recv_player] = sorted_hand
+    return
 
 @bot.hybrid_command()
 async def p(ctx, rank, card_string):
