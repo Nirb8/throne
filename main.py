@@ -60,6 +60,10 @@ async def give(ctx, rank, suit, recv_player):
     if recv_player not in player_list:
         await respond_ghost(ctx=ctx, response="That player doesn't exist")
         return
+    rank = cards.rank_to_num(rank)
+    if rank == -69:
+        await respond_ghost(ctx=ctx, response="invalid rank 💀")
+        return
     cards_to_give = []
     club_played = False
     diamond_played = False
