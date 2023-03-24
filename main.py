@@ -86,7 +86,7 @@ async def give(ctx, rank, suit, recv_player):
     if legal is False:
         await respond_ghost(ctx=ctx, response="you can't play that 💀")
         return
-    await respond_global(ctx=ctx, response=f"{player} gave {cards_to_give.count()} card(s) to {recv_player}.")
+    await respond_global(ctx=ctx, response=f"{player} gave {len(cards_to_give)} card(s) to {recv_player}.")
     for card in cards_to_give:
         cards.remove_card(card, player_hands[player])
         player_hands[recv_player].append(card)
