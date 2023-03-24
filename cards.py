@@ -45,7 +45,13 @@ def remove_card(card, hand):
                 hand.remove(card)
                 break
         return
-    hand.remove(card)
+    # hand.remove(card)
+    card_to_remove = None
+    for pcard in hand:
+        if card["rank"] == pcard["rank"] and card["suit"] == pcard["suit"]:
+            card_to_remove = pcard
+            break
+    hand.remove(card_to_remove)
 
 
 def get_emote(card):
