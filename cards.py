@@ -75,6 +75,10 @@ def get_emote(card):
         return "💀"
     return EMOTE_DICT[emoji_string]
 
+def get_emote_from_string(card_string):
+    if card_string not in  EMOTE_DICT.keys():
+        return "💀"
+    return EMOTE_DICT[card_string]
 def verify_play(player_hand, proposed_play):
     legal = True
     num_jokers = 0

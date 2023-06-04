@@ -2,7 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import shuffle
+import old_shuffle
 import cards
 load_dotenv()
 
@@ -163,7 +163,7 @@ async def start(ctx, jokers = 2, burn_cards = 0):
     global game_in_progress
     global current_player
     if not game_in_progress:
-        deck = shuffle.get_shuffled_deck_numeric(jokers)
+        deck = old_shuffle.get_shuffled_deck_numeric(jokers)
         for i in range(0, burn_cards):
             deck.popitem()
         deck_string = ""
@@ -284,7 +284,7 @@ async def respond_global(ctx, response):
 
 async def get_hands(deck):
     num_players = len(player_list)
-    hands_value, leftover = shuffle.deal(num_players, deck)
+    hands_value, leftover = old_shuffle.deal(num_players, deck)
     i = 0
     for player in player_list:
         sorted_hand = await sort_hand(hands_value[i], False)
