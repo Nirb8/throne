@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import old_shuffle
-import cards
+import old_cards
 load_dotenv()
 
 # class MyClient(discord.Client):
@@ -48,7 +48,7 @@ async def undo(ctx):
         undo_string = ""
         for card in player_last_played[player]:
             player_hands[player].append(card)
-            undo_string += cards.get_emote(card)
+            undo_string += old_cards.get_emote(card)
         player_hands[player] = await sort_hand(player_hands[player], False)
         await respond_global(ctx=ctx, response=f"Undo: {undo_string}")
         player_last_played[player] = None
@@ -60,7 +60,7 @@ async def give(ctx, rank, suit, recv_player):
     if recv_player not in player_list:
         await respond_ghost(ctx=ctx, response="That player doesn't exist")
         return
-    rank = cards.rank_to_num(rank)
+    rank = old_cards.rank_to_num(rank)
     if rank == -69:
         await respond_ghost(ctx=ctx, response="invalid rank 💀")
         return
@@ -86,13 +86,13 @@ async def give(ctx, rank, suit, recv_player):
         if c == "j":
             cards_to_give.append({"suit": -1, "rank": int(rank)})
     print(cards_to_give)
-    legal = cards.verify_play(player_hands[player], cards_to_give)
+    legal = old_cards.verify_play(player_hands[player], cards_to_give)
     if legal is False:
         await respond_ghost(ctx=ctx, response="you can't play that 💀")
         return
     for card in cards_to_give:
         print(card)
-        cards.remove_card(card, player_hands[player])
+        old_cards.remove_card(card, player_hands[player])
         player_hands[recv_player].append(card)
         sorted_hand = await sort_hand(player_hands[recv_player], False)
         player_hands[recv_player] = sorted_hand
@@ -113,7 +113,7 @@ async def p(ctx, rank, card_string):
     # if player != current_player:
     #     await respond_ghost(ctx=ctx, response="wait your turn dummy")
     #     return
-    rank = cards.rank_to_num(rank)
+    rank = old_cards.rank_to_num(rank)
     if rank == -69:
         await respond_ghost(ctx=ctx, response="invalid rank 💀")
         return
@@ -140,20 +140,20 @@ async def p(ctx, rank, card_string):
         if c == "j":
             cards_to_play.append({"suit": -1, "rank": int(rank)})
     print(cards_to_play)
-    legal = cards.verify_play(player_hands[player], cards_to_play)
+    legal = old_cards.verify_play(player_hands[player], cards_to_play)
     if legal is False:
         await respond_ghost(ctx=ctx, response="you can't play that 💀")
         return
     card_string = ""
     for card in cards_to_play:
-        card_string += cards.get_emote(card)
+        card_string += old_cards.get_emote(card)
     if card_string:
         await respond_global(ctx=ctx, response=f"{card_string}")
         print("deducting cards from player hand")
         # add to last played (for undo)
         player_last_played[player] = cards_to_play
         for card in cards_to_play:
-            cards.remove_card(card, player_hands[player])
+            old_cards.remove_card(card, player_hands[player])
         return
     await respond_ghost(ctx=ctx, response="actually put some cards")
         
@@ -171,7 +171,7 @@ async def start(ctx, jokers = 2, burn_cards = 0):
         print(f"current player: {current_player}")
         for card in deck.values():
             print(card)
-            deck_string += cards.get_emote(card)
+            deck_string += old_cards.get_emote(card)
         await get_hands(deck)
         game_in_progress = True
         await respond_global(ctx=ctx,response="THE GAME HAS STARTED") #TODO: Print out the standings
@@ -273,7 +273,7 @@ async def sh(ctx):
         if card["rank"] != prev_card["rank"]:
             deck_string+="   "
         prev_card = card
-        deck_string += cards.get_emote(card)
+        deck_string += old_cards.get_emote(card)
     await respond_ghost(ctx = ctx, response = deck_string)
     
 async def respond_ghost(ctx, response):
