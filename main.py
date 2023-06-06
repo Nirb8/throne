@@ -1,11 +1,14 @@
 # token accessible via: os.environ['TOKEN']
 import discord
 import os
-import cards
+import game_lib
 from dotenv import load_dotenv
 
 load_dotenv()
 bot = discord.Bot()
+
+# TODO this should be backed up to a database/text file
+games = []
 
 # TODO move these into a new cards.py
 EMOTE_DICT = {'A_hearts': '<:A_hearts:1073878545455124571>', '2_hearts': '<:2_hearts:1073878461053161472>', 'Q_hearts': '<:Q_hearts:1073878549532004383>', 'K_hearts': '<:K_hearts:1073878548043014194>', 'J_hearts': '<:J_hearts:1073878546801508353>', '3_hearts': '<:3_hearts:1073878462512775178>', '4_hearts': '<:4_hearts:1073878463775244308>', '5_hearts': '<:5_hearts:1073878464614121523>', '6_hearts': '<:6_hearts:1073878465490731058>', '7_hearts': '<:7_hearts:1073878467332022332>', '8_hearts': '<:8_hearts:1073878541386657802>', '9_hearts': '<:9_hearts:1073878542833700864>', '10_hearts': '<:10_hearts:1073878543739662366>', '10_clubs': '<:10_clubs:1073878161495965737>', '10_diamonds': '<:10_diamonds:1073876973966852167>', '10_spades': '<:10_spades:1073877343371800616>', '2_clubs': '<:2_clubs:1073878065270231050>', '2_diamonds': '<:2_diamonds:1073866501662191626>', '2_spades': '<:2_spades:1073877181387771925>', '3_clubs': '<:3_clubs:1073878067455463454>', '3_diamonds': '<:3_diamonds:1073865772578918410>', '3_spades': '<:3_spades:1073877183069683732>', '4_clubs': '<:4_clubs:1073878068655030293>', '4_diamonds': '<:4_diamonds:1073876967671201853>', '4_spades': '<:4_spades:1073877183820464198>', '5_clubs': '<:5_clubs:1073878069674250320>',
@@ -27,7 +30,18 @@ async def on_ready():
 async def hello(ctx):
     # print(ctx.channel.__dir__())
     await ctx.respond(f"Hey User {ctx.author} in channel {ctx.channel} (id: {ctx.channel.id})")
+    return
 
+@bot.command(name="makegame", description="Make a new game in this channel (limit 1 per channel)")
+async def makegame(ctx):
+    for g in games:
+        if g.channel_id == ctx.channel.id:
+            print("found game")
+            await ctx.respond("A game has already been created in this channel.")
+            return
+    new_game = game_lib.Game(ctx.channel.id)
+    games.append(new_game)
+    await ctx.respond(f"Created new game in channel {ctx.channel}")
 
 class CardSelectView(discord.ui.View):
     @discord.ui.select(
