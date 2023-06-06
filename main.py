@@ -1,6 +1,7 @@
 # token accessible via: os.environ['TOKEN']
 import discord
 import os
+import cards
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,7 +25,8 @@ async def on_ready():
 
 @bot.command(name="hello", description="Say hello to Throne")
 async def hello(ctx):
-    await ctx.respond("Hey!")
+    # print(ctx.channel.__dir__())
+    await ctx.respond(f"Hey User {ctx.author} in channel {ctx.channel} (id: {ctx.channel.id})")
 
 
 class CardSelectView(discord.ui.View):
