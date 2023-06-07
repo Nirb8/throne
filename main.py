@@ -2,6 +2,7 @@
 import discord
 import os
 import game_lib
+import ctypes
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -34,297 +35,103 @@ async def hello(ctx):
 
 @bot.command(name="makegame", description="Make a new game in this channel (limit 1 per channel)")
 async def makegame(ctx):
-    for g in games:
-        if g.channel_id == ctx.channel.id:
-            print("found game")
-            await ctx.respond("A game has already been created in this channel.")
-            return
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game:
+        await ctx.respond("A game has already been created in this channel.")
+        return
     new_game = game_lib.Game(ctx.channel.id)
     games.append(new_game)
     await ctx.respond(f"Created new game in channel {ctx.channel}")
+@bot.command(name="joingame", description="Join the ongoing game in this channel")
+async def joingame(ctx):
+    player_id = ctx.author.id
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    player = game_lib.find_player(player_id, game)
+    if player:
+        await ctx.respond(f"Player {ctx.author.mention} has already joined the game in this channel")
+        return
+    new_player = game_lib.Player(player_id, ctx.author.mention)
+    game.players.append(new_player)
+    await ctx.respond(f"Player {ctx.author.mention} has joined the game in this channel")
+    return
+@bot.command(name="listmem", description="Show participating players in the game in this channel")
+async def listmem(ctx):
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    players = game.players
+    player_list_string = f"List of players in channel {ctx.channel}:\n"
+    for p in players:
+        player_list_string += f"{p.username}\n"
+    await ctx.respond(player_list_string)
+    return
 
-class CardSelectView(discord.ui.View):
-    @discord.ui.select(
-        placeholder="Choose the cards you want to play!",
-        min_values=1,
-        max_values=4,
-        options=[
-            discord.SelectOption(
-                label="3 of Clubs",
-                value="3_clubs",
-                emoji=get_emote_from_string("3_clubs")
-            ),
-            discord.SelectOption(
-                label="3 of Spades",
-                value="3_spades",
-                emoji=get_emote_from_string("3_spades")
-            ),
-            discord.SelectOption(
-                label="3 of Hearts",
-                value="3_hearts",
-                emoji=get_emote_from_string("3_hearts")
-            ),
-            discord.SelectOption(
-                label="3 of Diamonds",
-                value="3_diamonds",
-                emoji=get_emote_from_string("3_diamonds")
-            ),
-            discord.SelectOption(
-                label="4 of Clubs",
-                value="4_clubs",
-                emoji=get_emote_from_string("4_clubs")
-            ),
-            discord.SelectOption(
-                label="4 of Spades",
-                value="4_spades",
-                emoji=get_emote_from_string("4_spades")
-            ),
-            discord.SelectOption(
-                label="4 of Hearts",
-                value="4_hearts",
-                emoji=get_emote_from_string("4_hearts")
-            ),
-            discord.SelectOption(
-                label="4 of Diamonds",
-                value="4_diamonds",
-                emoji=get_emote_from_string("4_diamonds")
-            ),
-            discord.SelectOption(
-                label="5 of Clubs",
-                value="5_clubs",
-                emoji=get_emote_from_string("5_clubs")
-            ),
-            discord.SelectOption(
-                label="5 of Spades",
-                value="5_spades",
-                emoji=get_emote_from_string("5_spades")
-            ),
-            discord.SelectOption(
-                label="5 of Hearts",
-                value="5_hearts",
-                emoji=get_emote_from_string("5_hearts")
-            ),
-            discord.SelectOption(
-                label="5 of Diamonds",
-                value="5_diamonds",
-                emoji=get_emote_from_string("5_diamonds")
-            ),
-            discord.SelectOption(
-                label="6 of Clubs",
-                value="6_clubs",
-                emoji=get_emote_from_string("6_clubs")
-            ),
-            discord.SelectOption(
-                label="6 of Spades",
-                value="6_spades",
-                emoji=get_emote_from_string("6_spades")
-            ),
-            discord.SelectOption(
-                label="6 of Hearts",
-                value="6_hearts",
-                emoji=get_emote_from_string("6_hearts")
-            ),
-            discord.SelectOption(
-                label="6 of Diamonds",
-                value="6_diamonds",
-                emoji=get_emote_from_string("6_diamonds")
-            ),
-            discord.SelectOption(
-                label="7 of Clubs",
-                value="7_clubs",
-                emoji=get_emote_from_string("7_clubs")
-            ),
-            discord.SelectOption(
-                label="7 of Spades",
-                value="7_spades",
-                emoji=get_emote_from_string("7_spades")
-            ),
-            discord.SelectOption(
-                label="7 of Hearts",
-                value="7_hearts",
-                emoji=get_emote_from_string("7_hearts")
-            ),
-            discord.SelectOption(
-                label="7 of Diamonds",
-                value="7_diamonds",
-                emoji=get_emote_from_string("7_diamonds")
-            ),
-            discord.SelectOption(
-                label="8 of Clubs",
-                value="8_clubs",
-                emoji=get_emote_from_string("8_clubs")
-            ),
-            # discord.SelectOption(
-            #     label="8 of Spades",
-            #     value="8_spades",
-            #     emoji=get_emote_from_string("8_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="8 of Hearts",
-            #     value="8_hearts",
-            #     emoji=get_emote_from_string("8_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="8 of Diamonds",
-            #     value="8_diamonds",
-            #     emoji=get_emote_from_string("8_diamonds")
-            # ),
-            # discord.SelectOption(
-            #     label="9 of Clubs",
-            #     value="9_clubs",
-            #     emoji=get_emote_from_string("9_clubs")
-            # ),
-            # discord.SelectOption(
-            #     label="9 of Spades",
-            #     value="9_spades",
-            #     emoji=get_emote_from_string("9_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="9 of Hearts",
-            #     value="9_hearts",
-            #     emoji=get_emote_from_string("9_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="9 of Diamonds",
-            #     value="9_diamonds",
-            #     emoji=get_emote_from_string("9_diamonds")
-            # ),
-            # discord.SelectOption(
-            #     label="10 of Clubs",
-            #     value="10_clubs",
-            #     emoji=get_emote_from_string("10_clubs")
-            # ),
-            # discord.SelectOption(
-            #     label="10 of Spades",
-            #     value="10_spades",
-            #     emoji=get_emote_from_string("10_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="10 of Hearts",
-            #     value="10_hearts",
-            #     emoji=get_emote_from_string("10_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="10 of Diamonds",
-            #     value="10_diamonds",
-            #     emoji=get_emote_from_string("10_diamonds")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Clubs",
-            #     value="J_clubs",
-            #     emoji=get_emote_from_string("J_clubs")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Spades",
-            #     value="J_spades",
-            #     emoji=get_emote_from_string("J_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Hearts",
-            #     value="J_hearts",
-            #     emoji=get_emote_from_string("J_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Diamonds",
-            #     value="J_diamonds",
-            #     emoji=get_emote_from_string("J_diamonds")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Clubs",
-            #     value="J_clubs",
-            #     emoji=get_emote_from_string("J_clubs")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Spades",
-            #     value="J_spades",
-            #     emoji=get_emote_from_string("J_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Hearts",
-            #     value="J_hearts",
-            #     emoji=get_emote_from_string("J_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="Jack of Diamonds",
-            #     value="J_diamonds",
-            #     emoji=get_emote_from_string("J_diamonds")
-            # ),
-            # discord.SelectOption(
-            #     label="Queen of Clubs",
-            #     value="Q_clubs",
-            #     emoji=get_emote_from_string("Q_clubs")
-            # ),
-            # discord.SelectOption(
-            #     label="Queen of Spades",
-            #     value="Q_spades",
-            #     emoji=get_emote_from_string("Q_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="Queen of Hearts",
-            #     value="Q_hearts",
-            #     emoji=get_emote_from_string("Q_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="Queen of Diamonds",
-            #     value="Q_diamonds",
-            #     emoji=get_emote_from_string("Q_diamonds")
-            # ),
-            # discord.SelectOption(
-            #     label="King of Clubs",
-            #     value="K_clubs",
-            #     emoji=get_emote_from_string("K_clubs")
-            # ),
-            # discord.SelectOption(
-            #     label="King of Spades",
-            #     value="K_spades",
-            #     emoji=get_emote_from_string("K_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="King of Hearts",
-            #     value="K_hearts",
-            #     emoji=get_emote_from_string("K_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="King of Diamonds",
-            #     value="K_diamonds",
-            #     emoji=get_emote_from_string("K_diamonds")
-            # ),
-            # discord.SelectOption(
-            #     label="Ace of Clubs",
-            #     value="A_clubs",
-            #     emoji=get_emote_from_string("A_clubs")
-            # ),
-            # discord.SelectOption(
-            #     label="Ace of Spades",
-            #     value="A_spades",
-            #     emoji=get_emote_from_string("A_spades")
-            # ),
-            # discord.SelectOption(
-            #     label="Ace of Hearts",
-            #     value="A_hearts",
-            #     emoji=get_emote_from_string("A_hearts")
-            # ),
-            # discord.SelectOption(
-            #     label="Ace of Diamonds",
-            #     value="A_diamonds",
-            #     emoji=get_emote_from_string("A_diamonds")
-            # ),
-            discord.SelectOption(
-                label="Pass",
-                emoji="🗿",
-            )
-        ]
-    )
-    # the function called when the user is done selecting options
-    async def select_callback(self, select, interaction):
-        userPickedValues = ""
-        for value in select.values:
-            userPickedValues += get_emote_from_string(value)
-        await interaction.response.send_message(userPickedValues)
+# TODO delet this later when mvp is delivered
+@bot.command(name="debugaddmem", description="hardcoded to add two users for testing purposes")
+async def debugaddmem(ctx):
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    p2 = game_lib.Player("216969551584165888", "<@216969551584165888>")
+    p3 = game_lib.Player("479758872412684290", "<@479758872412684290>")
+    game.players.append(p2)
+    game.players.append(p3)
+    await ctx.respond("added extra members")
 
-
+@bot.command(name="deal", description="deal new hands")
+async def deal(ctx, num_decks = 1, num_jokers = 2):
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    game.shuffle(num_decks, num_jokers)
+    game.deal()
+    await ctx.respond(f"Dealt hands of size {len(game.players[0].hand)} to all players.")
 @bot.command()
 async def p(ctx):
-    await ctx.send_response(content="**Card Select Menu**", view=CardSelectView(), ephemeral=True)
-
+    player_id = ctx.author.id
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    player = game_lib.find_player(player_id, game)
+    if player is False:
+        await ctx.send_response(content="You aren't in this game yet", ephemeral = True)
+        return
+    # await ctx.send_response(content="**Card Select Menu**", view=CardSelectView(), ephemeral=True)
+    if game.gaming is False:
+        await ctx.send_response(content="Game hasn't started yet, be patient", ephemeral = True)
+        return
+    # TODO will probably want to extract into separate method 
+    card_options = []
+    for card in player.hand:
+        new_option = discord.SelectOption(label=card.get_human_readable(), emoji=card.get_emote(), value = str(id(card)))
+        card_options.append(new_option)
+    card_select_menu = discord.ui.Select(options=card_options)
+    async def card_selection_callback(interaction):
+        user_picked_cards = []
+        user_picked_values = ""
+        for value in card_select_menu.values:
+            # convert reference id to Card object and append it to user_picked_cards
+            value_as_int = int(value)
+            user_picked_cards.append(ctypes.cast(value_as_int, ctypes.py_object).value)
+        user_picked_cards.sort()
+        # TODO perform a verification process on user_picked_cards
+        # TODO if verification successful remove user_picked_cards from user's cards
+        for card in user_picked_cards:
+            user_picked_values += card.get_emote()
+        await interaction.response.send_message(user_picked_values)
+    card_select_menu.callback = card_selection_callback
+    card_select_menu.max_values = 13
+    if len(player.hand) < 13:
+        card_select_menu.max_values = len(player.hand)
+    view = discord.ui.View()
+    view.add_item(card_select_menu)
+    await ctx.send_response(content="**Card Selection Menu**", view=view, ephemeral = True)
+    
 bot.run(os.getenv('TOKEN'))
