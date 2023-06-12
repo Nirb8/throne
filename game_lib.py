@@ -52,3 +52,14 @@ def find_player(player_id, game):
         if p.player_id == player_id:
             return p
     return False
+
+class GameState:
+    def __init__(self, current_player, turn_order):
+        self.current_player = current_player
+        self.turn_order = turn_order
+        self.last_played_cards = []
+        self.is_jackback = False
+        self.is_suitlock = False
+        self.num_revolutions = 0
+    # def check_play_valid_for_state(proposed_play):
+        

@@ -124,6 +124,8 @@ async def p(ctx):
         # TODO perform a verification process on user_picked_cards
         # TODO if verification successful remove user_picked_cards from user's cards
         for card in user_picked_cards:
+            player.hand.remove(card)
+        for card in user_picked_cards:
             user_picked_values += card.get_emote()
         await interaction.response.send_message(user_picked_values)
     card_select_menu.callback = card_selection_callback
