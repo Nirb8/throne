@@ -1,4 +1,3 @@
-# token accessible via: os.environ['TOKEN']
 import discord
 import os
 import game_lib

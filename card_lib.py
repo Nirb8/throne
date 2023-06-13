@@ -5,6 +5,8 @@ class Suit(Enum):
     DIAMONDS = 1
     HEARTS = 2
     SPADES = 3
+	 JOKER = 4
+
 
 class Card:
     def __init__(self, suit, rank):
@@ -46,6 +48,15 @@ class Card:
     def get_human_readable(self):
         CARD_NAME_DICT = {'A_hearts': 'Ace of Hearts', '2_hearts': 'Two of Hearts', '3_hearts': 'Three of Hearts', '4_hearts': 'Four of Hearts', '5_hearts': 'Five of Hearts', '6_hearts': 'Six of Hearts', '7_hearts': 'Seven of Hearts', '8_hearts': 'Eight of Hearts', '9_hearts': 'Nine of Hearts', '10_hearts': 'Ten of Hearts', 'J_hearts': 'Jack of Hearts', 'Q_hearts': 'Queen of Hearts', 'K_hearts': 'King of Hearts', 'A_diamonds': 'Ace of Diamonds', '2_diamonds': 'Two of Diamonds', '3_diamonds': 'Three of Diamonds', '4_diamonds': 'Four of Diamonds', '5_diamonds': 'Five of Diamonds', '6_diamonds': 'Six of Diamonds', '7_diamonds': 'Seven of Diamonds', '8_diamonds': 'Eight of Diamonds', '9_diamonds': 'Nine of Diamonds', '10_diamonds': 'Ten of Diamonds', 'J_diamonds': 'Jack of Diamonds', 'Q_diamonds': 'Queen of Diamonds', 'K_diamonds': 'King of Diamonds', 'A_clubs': 'Ace of Clubs', '2_clubs': 'Two of Clubs', '3_clubs': 'Three of Clubs', '4_clubs': 'Four of Clubs', '5_clubs': 'Five of Clubs', '6_clubs': 'Six of Clubs', '7_clubs': 'Seven of Clubs', '8_clubs': 'Eight of Clubs', '9_clubs': 'Nine of Clubs', '10_clubs': 'Ten of Clubs', 'J_clubs': 'Jack of Clubs', 'Q_clubs': 'Queen of Clubs', 'K_clubs': 'King of Clubs', 'A_spades': 'Ace of Spades', '2_spades': 'Two of Spades', '3_spades': 'Three of Spades', '4_spades': 'Four of Spades', '5_spades': 'Five of Spades', '6_spades': 'Six of Spades', '7_spades': 'Seven of Spades', '8_spades': 'Eight of Spades', '9_spades': 'Nine of Spades', '10_spades': 'Ten of Spades', 'J_spades': 'Jack of Spades', 'Q_spades': 'Queen of Spades', 'K_spades': 'King of Spades', 'R_red': 'Red Joker', 'R_black': 'Black Joker'}
         return CARD_NAME_DICT[str(self)]
-    # @classmethod
-    # def is_play_legal(proposed_play):
+	 @classmethod
+	 def hand_as_emotes(hand):
+		 emote_string = ""
+		 for card in hand:
+		 	 emote_string += CARD_NAME_DICT[str(card)]
+	 # Checks if a play is a legal move(not if it also beats the current play)
+    @classmethod
+    def is_play_legal(proposed_play):
+		 rank_to_match = proposed_play[0].rank
+		 for card in proposed_play:
+			
         

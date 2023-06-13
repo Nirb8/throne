@@ -3,7 +3,7 @@ import random
 class Game:
     def __init__(self, channel_id):
         self.channel_id = channel_id
-        self.players = []
+        self.state = GameState()
         self.deck = []
         self.gaming = False
     def shuffle(self, num_decks = 1, num_jokers = 2):
@@ -61,5 +61,6 @@ class GameState:
         self.is_jackback = False
         self.is_suitlock = False
         self.num_revolutions = 0
-    # def check_play_valid_for_state(proposed_play):
+    def check_play_valid_for_state(proposed_play):
+		return True
         
