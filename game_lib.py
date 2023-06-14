@@ -3,7 +3,7 @@ import random
 class Game:
     def __init__(self, channel_id):
         self.channel_id = channel_id
-        self.state = GameState()
+        self.state = GameState(None, [])
         self.deck = []
         self.gaming = False
     def shuffle(self, num_decks = 1, num_jokers = 2):
@@ -25,13 +25,13 @@ class Game:
         #     print(card)
         self.deck = deck
     def deal(self):
-        for player in self.players:
+        for player in self.state.players:
             player.hand = []
-        while(len(self.deck)>=len(self.players)):
-            for player in self.players:
+        while(len(self.deck)>=len(self.state.players)):
+            for player in self.state.players:
                 card = self.deck.pop(0)
                 player.hand.append(card)
-        for player in self.players:
+        for player in self.state.players:
             player.hand.sort()
         self.gaming = True
 class Player:
@@ -54,13 +54,12 @@ def find_player(player_id, game):
     return False
 
 class GameState:
-    def __init__(self, current_player, turn_order):
+    def __init__(self, current_player, players):
         self.current_player = current_player
-        self.turn_order = turn_order
+        self.players = players
         self.last_played_cards = []
         self.is_jackback = False
         self.is_suitlock = False
         self.num_revolutions = 0
-    def check_play_valid_for_state(proposed_play):
-		return True
-        
+    def check_play_valid(self, proposed_play):
+        return True
