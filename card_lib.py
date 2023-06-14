@@ -7,7 +7,7 @@ class Suit(Enum):
     HEARTS = 2
     SPADES = 3
     JOKER = 4
-
+    # TODO add joker suits, and an additional option suit for staircase option cards
 
 class Card:
     def __init__(self, suit, rank):
