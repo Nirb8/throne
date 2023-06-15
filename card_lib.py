@@ -16,9 +16,9 @@ class Card:
         self.rank = rank
 
     def __str__(self):
-        if self.suit == 4:
+        if self.suit == Suit(4):
             return "R_red"
-        if self.suit == 5:
+        if self.suit == Suit(5):
             return "R_black"
         return f"{self.get_rank_string()}_{self.suit.name.lower()}"
 
@@ -66,10 +66,13 @@ def hand_as_emotes(hand: list):
     for card in hand:
         emote_string += card.get_human_readable()
 
- # Checks if a play is a legal move(not if it also beats the current play)
-def is_play_legal(self, proposed_play: list):
+ # Checks if a play is a legal move(does not test if it also beats the current play)
+def is_play_legal(proposed_play: list):
     rank_to_match = proposed_play[0].rank
     is_same_rank = True
     for card in proposed_play:
         if card.rank != rank_to_match:
             is_same_rank = False
+    if is_same_rank:
+        return True
+    return False # TODO add staircasing check when card ranks differ

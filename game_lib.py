@@ -47,7 +47,7 @@ def find_game(id, game_list):
     return False
 
 def find_player(player_id, game):
-    players = game.players
+    players = game.state.players
     for p in players:
         if p.player_id == player_id:
             return p

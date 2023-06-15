@@ -1,6 +1,7 @@
 import discord
 import os
 import game_lib
+import card_lib
 import ctypes
 from dotenv import load_dotenv
 
@@ -53,7 +54,7 @@ async def joingame(ctx):
         await ctx.respond(f"Player {ctx.author.mention} has already joined the game in this channel")
         return
     new_player = game_lib.Player(player_id, ctx.author.mention)
-    game.players.append(new_player)
+    game.state.players.append(new_player)
     await ctx.respond(f"Player {ctx.author.mention} has joined the game in this channel")
     return
 @bot.command(name="listmem", description="Show participating players in the game in this channel")
@@ -62,7 +63,7 @@ async def listmem(ctx):
     if game is False:
         await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
         return
-    players = game.players
+    players = game.state.players
     player_list_string = f"List of players in channel {ctx.channel}:\n"
     for p in players:
         player_list_string += f"{p.username}\n"
@@ -78,8 +79,8 @@ async def debugaddmem(ctx):
         return
     p2 = game_lib.Player("216969551584165888", "<@216969551584165888>")
     p3 = game_lib.Player("479758872412684290", "<@479758872412684290>")
-    game.players.append(p2)
-    game.players.append(p3)
+    game.state.players.append(p2)
+    game.state.players.append(p3)
     await ctx.respond("added extra members")
 
 @bot.command(name="deal", description="deal new hands")
@@ -90,7 +91,7 @@ async def deal(ctx, num_decks = 1, num_jokers = 2):
         return
     game.shuffle(num_decks, num_jokers)
     game.deal()
-    await ctx.respond(f"Dealt hands of size {len(game.players[0].hand)} to all players.")
+    await ctx.respond(f"Dealt hands of size {len(game.state.players[0].hand)} to all players.")
 @bot.command()
 async def p(ctx):
     player_id = ctx.author.id
@@ -114,19 +115,24 @@ async def p(ctx):
     card_select_menu = discord.ui.Select(options=card_options)
     async def card_selection_callback(interaction):
         user_picked_cards = []
-        user_picked_values = ""
+        card_emote_string = ""
         for value in card_select_menu.values:
             # convert reference id to Card object and append it to user_picked_cards
             value_as_int = int(value)
             user_picked_cards.append(ctypes.cast(value_as_int, ctypes.py_object).value)
-        user_picked_cards.sort()
+        user_picked_cards.sort() # TODO intercept this with a joker replacement method and purge the option cards
+        # build card emote string from selected cards
+        for card in user_picked_cards:
+            card_emote_string += card.get_emote()
+        legal = card_lib.is_play_legal(user_picked_cards)
+        if not legal:
+            await interaction.response.send_message(f"{card_emote_string} is an illegal move!", ephemeral=True)
+            return
         # TODO perform a verification process on user_picked_cards
         # TODO if verification successful remove user_picked_cards from user's cards
         for card in user_picked_cards:
             player.hand.remove(card)
-        for card in user_picked_cards:
-            user_picked_values += card.get_emote()
-        await interaction.response.send_message(user_picked_values)
+        await interaction.response.send_message(card_emote_string)
     card_select_menu.callback = card_selection_callback
     card_select_menu.max_values = 13
     if len(player.hand) < 13:
