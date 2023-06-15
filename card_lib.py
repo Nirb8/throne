@@ -6,8 +6,9 @@ class Suit(Enum):
     DIAMONDS = 1
     HEARTS = 2
     SPADES = 3
-    JOKER = 4
-    # TODO add joker suits, and an additional option suit for staircase option cards
+    JOKER_RED = 4
+    JOKER_BLACK = 5
+    # TODO add an additional option suit for staircase option cards
 
 class Card:
     def __init__(self, suit, rank):
@@ -15,8 +16,10 @@ class Card:
         self.rank = rank
 
     def __str__(self):
-        if self.rank < 0:
-            return self.get_rank_string()
+        if self.suit == 4:
+            return "R_red"
+        if self.suit == 5:
+            return "R_black"
         return f"{self.get_rank_string()}_{self.suit.name.lower()}"
 
     def __lt__(self, other):

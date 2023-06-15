@@ -15,10 +15,10 @@ class Game:
         jokerToggle = True
         for i in range(num_jokers):
             if jokerToggle:
-                deck.append(card_lib.Card(0,-1))
+                deck.append(card_lib.Card(4,-1))
                 jokerToggle = False
             else:
-                deck.append(card_lib.Card(2,-2))
+                deck.append(card_lib.Card(5,-2))
                 jokerToggle = True
         random.shuffle(deck)
         # for card in deck:
