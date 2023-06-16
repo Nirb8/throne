@@ -25,7 +25,7 @@ class Card:
     def __lt__(self, other):
         # handle joker sort
         if self.rank < 0 and other.rank < 0:
-            return self.rank < other.rank
+            return self.suit.value < other.suit.value
         if self.rank < 0 and other.rank >= 0:
             return False
         if self.rank >= 0 and other.rank < 0:
@@ -41,8 +41,6 @@ class Card:
             10: "K",
             9: "Q",
             8: "J",
-            -1: "R_black",
-            -2: "R_red"
         }
         if self.rank not in rank_dict.keys():
             real_value = self.rank + 3
@@ -64,15 +62,39 @@ class Card:
 def hand_as_emotes(hand: list):
     emote_string = ""
     for card in hand:
-        emote_string += card.get_human_readable()
+        emote_string += card.get_emote()
+    return emote_string
 
- # Checks if a play is a legal move(does not test if it also beats the current play)
+ # Checks if a play is a legal move, in a vacuum(does not test if it also beats the current play)
 def is_play_legal(proposed_play: list):
     rank_to_match = proposed_play[0].rank
     is_same_rank = True
     for card in proposed_play:
         if card.rank != rank_to_match:
             is_same_rank = False
-    if is_same_rank:
+    if is_same_rank and len(proposed_play) <= 4:
         return True
     return False # TODO add staircasing check when card ranks differ
+
+def compare_hands(proposed_hand, target_hand, is_revolution):
+    if target_hand == []:
+        return True
+    proposed_hand_value = get_hand_value(proposed_hand, is_revolution)
+    target_hand_value = get_hand_value(target_hand, is_revolution)
+    if target_hand_value < 0:
+        return False
+    if proposed_hand_value < 0 and target_hand_value >= 0:
+        return True
+    if not is_revolution:
+        return proposed_hand_value > target_hand_value
+    return proposed_hand_value < target_hand_value
+def get_hand_value(hand, is_revolution):
+    all_jokers = True
+    for card in hand:
+        if not card.suit == Suit(4) and not card.suit == Suit(5):
+            all_jokers = False
+    if all_jokers:
+        return -1
+    if not is_revolution:
+        return max(hand).rank
+    return min(hand).rank

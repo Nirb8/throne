@@ -93,8 +93,10 @@ async def deal(ctx, num_decks = 1, num_jokers = 2):
     game.deal()
     await ctx.respond(f"Dealt hands of size {len(game.state.players[0].hand)} to all players.")
 @bot.command()
-async def p(ctx):
+async def p(ctx, spoof_player = None):
     player_id = ctx.author.id
+    if spoof_player is not None:
+        player_id = spoof_player
     game = game_lib.find_game(ctx.channel.id, games)
     if game is False:
         await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
@@ -106,6 +108,12 @@ async def p(ctx):
     # await ctx.send_response(content="**Card Select Menu**", view=CardSelectView(), ephemeral=True)
     if game.gaming is False:
         await ctx.send_response(content="Game hasn't started yet, be patient", ephemeral = True)
+        return
+    if game.state.current_player != player:
+        turn_order_string = ""
+        for player in game.state.players:
+            turn_order_string += f"{player.username}\n"
+        await ctx.send_response(content=f"It's not your turn yet, the current player is {game.state.current_player}. The turn order is: \n{turn_order_string}", ephemeral = True)
         return
     # TODO will probably want to extract into separate method 
     card_options = []
@@ -120,19 +128,22 @@ async def p(ctx):
             # convert reference id to Card object and append it to user_picked_cards
             value_as_int = int(value)
             user_picked_cards.append(ctypes.cast(value_as_int, ctypes.py_object).value)
-        user_picked_cards.sort() # TODO intercept this with a joker replacement method and purge the option cards
+        user_picked_cards.sort() # TODO intercept this with a joker value replacement method and purge the option cards
         # build card emote string from selected cards
-        for card in user_picked_cards:
-            card_emote_string += card.get_emote()
+        card_emote_string = card_lib.hand_as_emotes(user_picked_cards)
         legal = card_lib.is_play_legal(user_picked_cards)
         if not legal:
             await interaction.response.send_message(f"{card_emote_string} is an illegal move!", ephemeral=True)
             return
+        play_message = game.state.check_play_valid(user_picked_cards)
+        if play_message != "ok":
+            await interaction.response.send_message(f"{play_message}", ephemeral=True)
+        game.make_move(player, user_picked_cards)
         # TODO perform a verification process on user_picked_cards
         # TODO if verification successful remove user_picked_cards from user's cards
-        for card in user_picked_cards:
-            player.hand.remove(card)
         await interaction.response.send_message(card_emote_string)
+        
+        
     card_select_menu.callback = card_selection_callback
     card_select_menu.max_values = 13
     if len(player.hand) < 13:
