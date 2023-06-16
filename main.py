@@ -33,6 +33,7 @@ async def hello(ctx):
     await ctx.respond(f"Hey User {ctx.author} in channel {ctx.channel} (id: {ctx.channel.id})")
     return
 
+
 @bot.command(name="makegame", description="Make a new game in this channel (limit 1 per channel)")
 async def makegame(ctx):
     game = game_lib.find_game(ctx.channel.id, games)
@@ -42,6 +43,8 @@ async def makegame(ctx):
     new_game = game_lib.Game(ctx.channel.id)
     games.append(new_game)
     await ctx.respond(f"Created new game in channel {ctx.channel}")
+
+
 @bot.command(name="joingame", description="Join the ongoing game in this channel")
 async def joingame(ctx):
     player_id = ctx.author.id
@@ -57,6 +60,8 @@ async def joingame(ctx):
     game.state.players.append(new_player)
     await ctx.respond(f"Player {ctx.author.mention} has joined the game in this channel")
     return
+
+
 @bot.command(name="listmem", description="Show participating players in the game in this channel")
 async def listmem(ctx):
     game = game_lib.find_game(ctx.channel.id, games)
@@ -71,6 +76,8 @@ async def listmem(ctx):
     return
 
 # TODO delet this later when mvp is delivered
+
+
 @bot.command(name="debugaddmem", description="hardcoded to add two users for testing purposes")
 async def debugaddmem(ctx):
     game = game_lib.find_game(ctx.channel.id, games)
@@ -83,8 +90,9 @@ async def debugaddmem(ctx):
     game.state.players.append(p3)
     await ctx.respond("added extra members")
 
+
 @bot.command(name="deal", description="deal new hands")
-async def deal(ctx, num_decks = 1, num_jokers = 2):
+async def deal(ctx, num_decks=1, num_jokers=2):
     game = game_lib.find_game(ctx.channel.id, games)
     if game is False:
         await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
@@ -92,8 +100,33 @@ async def deal(ctx, num_decks = 1, num_jokers = 2):
     game.shuffle(num_decks, num_jokers)
     game.deal()
     await ctx.respond(f"Dealt hands of size {len(game.state.players[0].hand)} to all players.")
+
+
+@bot.command(name="stats", description="show current game stats")
+async def stats(ctx):
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    stat_string = ""
+    if game.state.last_played_cards != []:
+        stat_string += f"Current Trick: {card_lib.hand_as_emotes(game.state.last_played_cards)} played by {game.state.last_played_player}\n"
+    stat_string += f"Current Player: {game.state.current_player.username}\n"
+    stat_string += f"Turn Order:\n {game.state.get_turn_order_string()}\n"
+    await ctx.send_response(stat_string, allowed_mentions=discord.AllowedMentions.none())
+@bot.command(name="trick", description="show currently played cards in big emote format")
+async def trick(ctx):
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    if game.state.last_played_cards == []:
+        await ctx.send_response(f"There are no cards in play at the moment. It is {game.state.current_player}'s turn.")
+        return
+    await ctx.send_response(f"{card_lib.hand_as_emotes(game.state.last_played_cards)}")
+
 @bot.command()
-async def p(ctx, spoof_player = None):
+async def p(ctx, spoof_player=None):
     player_id = ctx.author.id
     if spoof_player is not None:
         player_id = spoof_player
@@ -103,32 +136,34 @@ async def p(ctx, spoof_player = None):
         return
     player = game_lib.find_player(player_id, game)
     if player is False:
-        await ctx.send_response(content="You aren't in this game yet", ephemeral = True)
+        await ctx.send_response(content="You aren't in this game yet", ephemeral=True)
         return
     # await ctx.send_response(content="**Card Select Menu**", view=CardSelectView(), ephemeral=True)
     if game.gaming is False:
-        await ctx.send_response(content="Game hasn't started yet, be patient", ephemeral = True)
+        await ctx.send_response(content="Game hasn't started yet, be patient", ephemeral=True)
         return
     if game.state.current_player != player:
-        turn_order_string = ""
-        for player in game.state.players:
-            turn_order_string += f"{player.username}\n"
-        await ctx.send_response(content=f"It's not your turn yet, the current player is {game.state.current_player}. The turn order is: \n{turn_order_string}", ephemeral = True)
+        turn_order_string = game.state.get_turn_order_string()
+        await ctx.send_response(content=f"It's not your turn yet, the current player is {game.state.current_player}. The turn order is: \n{turn_order_string}", ephemeral=True)
         return
-    # TODO will probably want to extract into separate method 
+    # TODO will probably want to extract into separate method
     card_options = []
     for card in player.hand:
-        new_option = discord.SelectOption(label=card.get_human_readable(), emoji=card.get_emote(), value = str(id(card)))
+        new_option = discord.SelectOption(
+            label=card.get_human_readable(), emoji=card.get_emote(), value=str(id(card)))
         card_options.append(new_option)
     card_select_menu = discord.ui.Select(options=card_options)
+
     async def card_selection_callback(interaction):
         user_picked_cards = []
         card_emote_string = ""
         for value in card_select_menu.values:
             # convert reference id to Card object and append it to user_picked_cards
             value_as_int = int(value)
-            user_picked_cards.append(ctypes.cast(value_as_int, ctypes.py_object).value)
-        user_picked_cards.sort() # TODO intercept this with a joker value replacement method and purge the option cards
+            user_picked_cards.append(ctypes.cast(
+                value_as_int, ctypes.py_object).value)
+        # TODO intercept this with a joker value replacement method and purge the option cards
+        user_picked_cards.sort()
         # build card emote string from selected cards
         card_emote_string = card_lib.hand_as_emotes(user_picked_cards)
         legal = card_lib.is_play_legal(user_picked_cards)
@@ -141,15 +176,15 @@ async def p(ctx, spoof_player = None):
         game.make_move(player, user_picked_cards)
         # TODO perform a verification process on user_picked_cards
         # TODO if verification successful remove user_picked_cards from user's cards
-        await interaction.response.send_message(card_emote_string)
-        
-        
+        await interaction.response.send_message(f"{player.username} played: {card_emote_string}",allowed_mentions=discord.AllowedMentions.none())
+        await ctx.send_followup(card_emote_string)
+
     card_select_menu.callback = card_selection_callback
     card_select_menu.max_values = 13
     if len(player.hand) < 13:
         card_select_menu.max_values = len(player.hand)
     view = discord.ui.View()
     view.add_item(card_select_menu)
-    await ctx.send_response(content="**Card Selection Menu**", view=view, ephemeral = True)
-    
+    await ctx.send_response(content="**Card Selection Menu**", view=view, ephemeral=True)
+
 bot.run(os.getenv('TOKEN'))

@@ -79,10 +79,15 @@ class GameState:
         self.is_jackback = False
         self.is_suitlock = False
         self.num_revolutions = 0
+    def is_revolution(self):
+        is_revolution = self.num_revolutions % 2 > 0
+        if self.is_jackback:
+            is_revolution = not is_revolution
+        return is_revolution
     def check_play_valid(self, proposed_play):
         if len(proposed_play) != len(self.last_played_cards) and len(self.last_played_cards) > 0:
             return f"Your play of {len(proposed_play)} card(s) does not match number of cards in the current trick ({len(self.last_played_cards)} card(s))"
-        is_revolution = self.num_revolutions % 2 > 0
+        is_revolution = self.is_revolution()
         beats_current_play = card_lib.compare_hands(proposed_play, self.last_played_cards, is_revolution)
         if not beats_current_play:
             return f"Your play of {card_lib.hand_as_emotes(proposed_play)} does not beat the current trick ({card_lib.hand_as_emotes(self.last_played_cards)})"
@@ -91,3 +96,8 @@ class GameState:
         current_player_index = self.players.index(self.current_player)
         new_player_index = (current_player_index + 1) % len(self.players)
         self.current_player = self.players[new_player_index]
+    def get_turn_order_string(self):
+        turn_order_string = ""
+        for player in self.players:
+            turn_order_string += f"{player.username}\n"
+        return turn_order_string
