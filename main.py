@@ -78,7 +78,7 @@ async def listmem(ctx):
 # TODO delet this later when mvp is delivered
 
 
-@bot.command(name="debugaddmem", description="hardcoded to add two users for testing purposes")
+@bot.command(name="addmem_debug", description="hardcoded to add two users for testing purposes")
 async def debugaddmem(ctx):
     game = game_lib.find_game(ctx.channel.id, games)
     if game is False:
@@ -114,6 +114,8 @@ async def stats(ctx):
     stat_string += f"Current Player: {game.state.current_player.username}\n"
     stat_string += f"Turn Order:\n {game.state.get_turn_order_string()}\n"
     await ctx.send_response(stat_string, allowed_mentions=discord.AllowedMentions.none())
+
+
 @bot.command(name="trick", description="show currently played cards in big emote format")
 async def trick(ctx):
     game = game_lib.find_game(ctx.channel.id, games)
@@ -125,15 +127,17 @@ async def trick(ctx):
         return
     await ctx.send_response(f"{card_lib.hand_as_emotes(game.state.last_played_cards)}")
 
+
 @bot.command()
 async def p(ctx, spoof_player=None):
-    player_id = ctx.author.id
-    if spoof_player is not None:
-        player_id = spoof_player
     game = game_lib.find_game(ctx.channel.id, games)
     if game is False:
         await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
         return
+    player_id = ctx.author.id
+    if spoof_player is not None and int(spoof_player)<len(game.state.players):
+        player_id = game.state.players[int(spoof_player)].player_id
+        await ctx.send(f"spoofing player {game_lib.find_player(player_id, game)}")
     player = game_lib.find_player(player_id, game)
     if player is False:
         await ctx.send_response(content="You aren't in this game yet", ephemeral=True)
@@ -148,6 +152,10 @@ async def p(ctx, spoof_player=None):
         return
     # TODO will probably want to extract into separate method
     card_options = []
+    pass_option = discord.SelectOption(
+        label="Pass", emoji="🗿", value="0"
+    )
+    card_options.append(pass_option)
     for card in player.hand:
         new_option = discord.SelectOption(
             label=card.get_human_readable(), emoji=card.get_emote(), value=str(id(card)))
@@ -160,8 +168,20 @@ async def p(ctx, spoof_player=None):
         for value in card_select_menu.values:
             # convert reference id to Card object and append it to user_picked_cards
             value_as_int = int(value)
-            user_picked_cards.append(ctypes.cast(
-                value_as_int, ctypes.py_object).value)
+            if value_as_int > 100:
+                user_picked_cards.append(ctypes.cast(
+                    value_as_int, ctypes.py_object).value)
+                continue
+            # if the value is less than 100, it is a special option?
+            if value_as_int == 0:
+                is_new_trick = game.make_pass(player)
+                if is_new_trick:
+                    await interaction.response.send_message(
+                        f"Everyone passed 🗿🗿🗿 \n{game.state.current_player} gets to start a new trick")
+                    return
+                await interaction.response.send_message(
+                    f"{player} has passed 🗿 \nIt's now {game.state.current_player}'s turn")
+                return
         # TODO intercept this with a joker value replacement method and purge the option cards
         user_picked_cards.sort()
         # build card emote string from selected cards
@@ -176,7 +196,7 @@ async def p(ctx, spoof_player=None):
         game.make_move(player, user_picked_cards)
         # TODO perform a verification process on user_picked_cards
         # TODO if verification successful remove user_picked_cards from user's cards
-        await interaction.response.send_message(f"{player.username} played: {card_emote_string}",allowed_mentions=discord.AllowedMentions.none())
+        await interaction.response.send_message(f"{player.username} played: {card_emote_string}", allowed_mentions=discord.AllowedMentions.none())
         await ctx.send_followup(card_emote_string)
 
     card_select_menu.callback = card_selection_callback

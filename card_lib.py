@@ -8,6 +8,7 @@ class Suit(Enum):
     SPADES = 3
     JOKER_RED = 4
     JOKER_BLACK = 5
+    OPTION = 6
     # TODO add an additional option suit for staircase option cards
 
 class Card:
