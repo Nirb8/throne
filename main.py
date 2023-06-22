@@ -1,9 +1,9 @@
-import discord
 import os
-import game_lib
-import card_lib
 import ctypes
 from dotenv import load_dotenv
+import discord
+import game_lib
+import card_lib
 
 load_dotenv()
 bot = discord.Bot()
@@ -128,6 +128,74 @@ async def trick(ctx):
     await ctx.send_response(f"{card_lib.hand_as_emotes(game.state.last_played_cards)}")
 
 
+async def card_select_menu_callback_generator(ctx, card_select_menu, player_id = None):
+    async def card_selection_callback(interaction):
+        game = game_lib.find_game(interaction.channel.id, games)
+        # player = game_lib.find_player(interaction.user.id, game)
+        player = game_lib.find_player(player_id, game)
+        spoofing_override = True
+        if game.state.current_player != player and spoofing_override is False:
+            turn_order_string = game.state.get_turn_order_string()
+            await interaction.response.send_message(f"It's not your turn yet, the current player is {game.state.current_player}. The turn order is: \n{turn_order_string}", ephemeral=True)
+            return
+        if player.is_active is False:
+            await interaction.response.send_message(content="You're already out!", ephemeral=True)
+            return
+        user_picked_cards = []
+        card_emote_string = ""
+        for value in card_select_menu.values:
+            # convert reference id to Card object and append it to user_picked_cards
+            value_as_int = int(value)
+            if value_as_int > 100:
+                user_picked_cards.append(ctypes.cast(
+                    value_as_int, ctypes.py_object).value)
+                continue
+            # if the value is less than 100, it is a special option?
+            if value_as_int == 0:
+                is_new_trick = game.make_pass()
+                if is_new_trick:
+                    await interaction.response.send_message(
+                        f"Everyone passed 🗿🗿🗿 \n{game.state.current_player} gets to start a new trick")
+                    return
+                await interaction.response.send_message(
+                    f"{player} has passed 🗿 \nIt's now {game.state.current_player}'s turn")
+                return
+        cards_not_held = []
+        for card in user_picked_cards:
+            if card not in player.hand:
+                cards_not_held.append(card)
+        if len(cards_not_held) > 0:
+            not_held_emotes = card_lib.hand_as_emotes(cards_not_held)
+            await interaction.response.send_message(f"You are missing the cards: {not_held_emotes}.\nTry using the /p command again to refresh your card selection menu.")
+            return
+        # TODO intercept this with a joker value replacement method and purge the option cards
+        user_picked_cards.sort()
+        # build card emote string from selected cards
+        card_emote_string = card_lib.hand_as_emotes(user_picked_cards)
+        legal = card_lib.is_play_legal(user_picked_cards)
+        if not legal:
+            await interaction.response.send_message(f"{card_emote_string} is an illegal move!", ephemeral=True)
+            return
+        play_message = game.state.check_play_valid(user_picked_cards)
+        if play_message != "ok":
+            await interaction.response.send_message(f"{play_message}", ephemeral=True)
+            return
+        player_out = game.make_move(player, user_picked_cards)
+        if player_out == 1:
+            await ctx.send(f"{player} has played all their cards and is now out of the game.")
+        if player_out == 2:
+            await ctx.send(f"{player} has played all their cards and is now out of the game.")
+            win_string = "win order: "
+            for player in game.state.win_order:
+                win_string += f"{player} "
+            await interaction.response.send_message(f"game is over, standings: {win_string}")
+            return
+            # perform new game stuff + cleanup game state
+        # TODO perform a verification process on user_picked_cards
+        # TODO if verification successful remove user_picked_cards from user's cards
+        await interaction.response.send_message(f"{player.username} played: {card_emote_string}", allowed_mentions=discord.AllowedMentions.none())
+        await ctx.send_followup(card_emote_string)
+    return card_selection_callback
 @bot.command()
 async def p(ctx, spoof_player=None):
     game = game_lib.find_game(ctx.channel.id, games)
@@ -142,7 +210,9 @@ async def p(ctx, spoof_player=None):
     if player is False:
         await ctx.send_response(content="You aren't in this game yet", ephemeral=True)
         return
-    # await ctx.send_response(content="**Card Select Menu**", view=CardSelectView(), ephemeral=True)
+    if player.is_active is False:
+        await ctx.send_response(content="You're already out!", ephemeral=True)
+        return
     if game.gaming is False:
         await ctx.send_response(content="Game hasn't started yet, be patient", ephemeral=True)
         return
@@ -162,44 +232,7 @@ async def p(ctx, spoof_player=None):
         card_options.append(new_option)
     card_select_menu = discord.ui.Select(options=card_options)
 
-    async def card_selection_callback(interaction):
-        user_picked_cards = []
-        card_emote_string = ""
-        for value in card_select_menu.values:
-            # convert reference id to Card object and append it to user_picked_cards
-            value_as_int = int(value)
-            if value_as_int > 100:
-                user_picked_cards.append(ctypes.cast(
-                    value_as_int, ctypes.py_object).value)
-                continue
-            # if the value is less than 100, it is a special option?
-            if value_as_int == 0:
-                is_new_trick = game.make_pass(player)
-                if is_new_trick:
-                    await interaction.response.send_message(
-                        f"Everyone passed 🗿🗿🗿 \n{game.state.current_player} gets to start a new trick")
-                    return
-                await interaction.response.send_message(
-                    f"{player} has passed 🗿 \nIt's now {game.state.current_player}'s turn")
-                return
-        # TODO intercept this with a joker value replacement method and purge the option cards
-        user_picked_cards.sort()
-        # build card emote string from selected cards
-        card_emote_string = card_lib.hand_as_emotes(user_picked_cards)
-        legal = card_lib.is_play_legal(user_picked_cards)
-        if not legal:
-            await interaction.response.send_message(f"{card_emote_string} is an illegal move!", ephemeral=True)
-            return
-        play_message = game.state.check_play_valid(user_picked_cards)
-        if play_message != "ok":
-            await interaction.response.send_message(f"{play_message}", ephemeral=True)
-        game.make_move(player, user_picked_cards)
-        # TODO perform a verification process on user_picked_cards
-        # TODO if verification successful remove user_picked_cards from user's cards
-        await interaction.response.send_message(f"{player.username} played: {card_emote_string}", allowed_mentions=discord.AllowedMentions.none())
-        await ctx.send_followup(card_emote_string)
-
-    card_select_menu.callback = card_selection_callback
+    card_select_menu.callback = await card_select_menu_callback_generator(ctx, card_select_menu, player_id)
     card_select_menu.max_values = 13
     if len(player.hand) < 13:
         card_select_menu.max_values = len(player.hand)

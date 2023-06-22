@@ -27,6 +27,7 @@ class Game:
     def deal(self):
         for player in self.state.players:
             player.hand = []
+            player.is_active = True
         while(len(self.deck)>=len(self.state.players)):
             for player in self.state.players:
                 card = self.deck.pop(0)
@@ -41,19 +42,45 @@ class Game:
         for card in played_cards:
             player.hand.remove(card)
         self.state.advance_turn()
+        # game ender
+        if player.hand == [] and self.get_num_players_remaining() == 2:
+            self.state.win_order.append(player)
+            player.is_active = False
+            last_player = self.get_last_remaining_player()
+            self.state.win_order.append(last_player)
+            if self.state.biggest_loser != None:
+                self.state.win_order.append(self.state.biggest_loser)
+            return 2
+        if player.hand == []:
+            self.state.win_order.append(player)
+            player.is_active = False
+            return 1
+        return 0 # TODO replace with enums
     # return True if everyone else passed and a new trick is started, and False otherwise
-    def make_pass(self, player):
+    def make_pass(self):
         self.state.advance_turn()
         if self.state.last_played_player == self.state.current_player:
             self.state.last_played_cards = []
             return True
         return False
-        
+    def get_num_players_remaining(self):
+        num_players = 0
+        for player in self.state.players:
+            if player.is_active:
+                num_players += 1
+        return num_players
+    def get_last_remaining_player(self):
+        if self.get_num_players_remaining() > 1:
+            return None
+        for player in self.state.players:
+            if player.is_active:
+                return player
 class Player:
     def __init__(self, player_id, username):
         self.player_id = player_id
         self.username = username
         self.hand = []
+        self.is_active = False
     def __str__(self):
         return self.username
         
@@ -79,6 +106,8 @@ class GameState:
         self.is_jackback = False
         self.is_suitlock = False
         self.num_revolutions = 0
+        self.win_order = []
+        self.biggest_loser = None
     def is_revolution(self):
         is_revolution = self.num_revolutions % 2 > 0
         if self.is_jackback:
@@ -96,6 +125,8 @@ class GameState:
         current_player_index = self.players.index(self.current_player)
         new_player_index = (current_player_index + 1) % len(self.players)
         self.current_player = self.players[new_player_index]
+        if self.current_player.is_active is False:
+            self.advance_turn()
     def get_turn_order_string(self):
         turn_order_string = ""
         for player in self.players:
