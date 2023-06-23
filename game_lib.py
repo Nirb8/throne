@@ -1,12 +1,15 @@
 import card_lib
 import random
+from enum import Enum
+
 class Game:
     def __init__(self, channel_id):
         self.channel_id = channel_id
         self.state = GameState(None, [])
         self.deck = []
         self.gaming = False
-    def shuffle(self, num_decks = 1, num_jokers = 2):
+
+    def shuffle(self, num_decks=1, num_jokers=2):
         deck = []
         for d in range(num_decks):
             for i in range(4):
@@ -15,20 +18,21 @@ class Game:
         jokerToggle = True
         for i in range(num_jokers):
             if jokerToggle:
-                deck.append(card_lib.Card(4,-1))
+                deck.append(card_lib.Card(4, -1))
                 jokerToggle = False
             else:
-                deck.append(card_lib.Card(5,-2))
+                deck.append(card_lib.Card(5, -2))
                 jokerToggle = True
         random.shuffle(deck)
         # for card in deck:
         #     print(card)
         self.deck = deck
+
     def deal(self):
         for player in self.state.players:
             player.hand = []
             player.is_active = True
-        while(len(self.deck)>=len(self.state.players)):
+        while len(self.deck) >= len(self.state.players):
             for player in self.state.players:
                 card = self.deck.pop(0)
                 player.hand.append(card)
@@ -36,6 +40,18 @@ class Game:
             player.hand.sort()
         self.gaming = True
         self.state.current_player = self.state.players[0]
+
+    def deal_paltry(self):
+        for player in self.state.players:
+            player.hand = []
+            player.is_active = True
+        card_counter = 0
+        for player in self.state.players:
+            player.hand.append(card_lib.Card(0, card_counter))
+            card_counter += 1
+            self.gaming = True
+            self.state.current_player = self.state.players[0]
+
     def make_move(self, player, played_cards):
         self.state.last_played_cards = played_cards
         self.state.last_played_player = player
@@ -48,14 +64,16 @@ class Game:
             player.is_active = False
             last_player = self.get_last_remaining_player()
             self.state.win_order.append(last_player)
-            if self.state.biggest_loser != None:
+            if self.state.biggest_loser is not None:
                 self.state.win_order.append(self.state.biggest_loser)
+            self.assign_titles()
             return 2
         if player.hand == []:
             self.state.win_order.append(player)
             player.is_active = False
             return 1
-        return 0 # TODO replace with enums
+        return 0  # TODO replace with enums
+
     # return True if everyone else passed and a new trick is started, and False otherwise
     def make_pass(self):
         self.state.advance_turn()
@@ -63,32 +81,75 @@ class Game:
             self.state.last_played_cards = []
             return True
         return False
+
     def get_num_players_remaining(self):
         num_players = 0
         for player in self.state.players:
             if player.is_active:
                 num_players += 1
         return num_players
+
     def get_last_remaining_player(self):
         if self.get_num_players_remaining() > 1:
             return None
         for player in self.state.players:
             if player.is_active:
                 return player
+    def assign_titles(self):
+        first = self.state.win_order.pop(0)
+        last = self.state.win_order.pop(len(self.state.win_order)-1)
+        first.title = Title.PRESIDENT
+        last.title = Title.BIGGEST_LOSER
+        if len(self.state.win_order) > 1:
+            second = self.state.win_order.pop(0)
+            second_to_last = self.state.win_order.pop(len(self.state.win_order)-1)
+            second.title = Title.VICE_PRESIDENT
+            second_to_last.title = Title.POOR
+        for player in self.state.win_order: 
+            player.title = Title.THE_GUY
+    def get_player_titles(self):
+        title_string = ""
+        for player in self.state.players:
+            if player.title == Title.PRESIDENT:
+                title_string += f"👑 {player.get_title_string()}\n"
+        for player in self.state.players:
+            if player.title == Title.VICE_PRESIDENT:
+                title_string += f"🥈 {player.get_title_string()}\n"
+        for player in self.state.players:
+            if player.title == Title.THE_GUY:
+                title_string += f"👨 {player.get_title_string()}\n"
+        for player in self.state.players:
+            if player.title == Title.POOR:
+                title_string += f"😢 {player.get_title_string()}\n"
+        for player in self.state.players:
+            if player.title == Title.BIGGEST_LOSER:
+                title_string += f"😭 {player.get_title_string()}\n"
+        return title_string
+class Title(Enum):
+    PRESIDENT = "President"
+    VICE_PRESIDENT = "Vice President"
+    THE_GUY = "*The Guy*"
+    POOR = "Poor"
+    BIGGEST_LOSER = "Biggest Loser"
 class Player:
     def __init__(self, player_id, username):
         self.player_id = player_id
         self.username = username
         self.hand = []
         self.is_active = False
+        self.title = Title.THE_GUY
+
     def __str__(self):
         return self.username
-        
+    def get_title_string(self):
+        return f"[{self.title.value}] {self.username}"
+
 def find_game(id, game_list):
     for g in game_list:
         if g.channel_id == id:
             return g
     return False
+
 
 def find_player(player_id, game):
     players = game.state.players
@@ -96,6 +157,7 @@ def find_player(player_id, game):
         if p.player_id == player_id:
             return p
     return False
+
 
 class GameState:
     def __init__(self, current_player, players):
@@ -108,25 +170,34 @@ class GameState:
         self.num_revolutions = 0
         self.win_order = []
         self.biggest_loser = None
+
     def is_revolution(self):
         is_revolution = self.num_revolutions % 2 > 0
         if self.is_jackback:
             is_revolution = not is_revolution
         return is_revolution
+
     def check_play_valid(self, proposed_play):
-        if len(proposed_play) != len(self.last_played_cards) and len(self.last_played_cards) > 0:
+        if (
+            len(proposed_play) != len(self.last_played_cards)
+            and len(self.last_played_cards) > 0
+        ):
             return f"Your play of {len(proposed_play)} card(s) does not match number of cards in the current trick ({len(self.last_played_cards)} card(s))"
         is_revolution = self.is_revolution()
-        beats_current_play = card_lib.compare_hands(proposed_play, self.last_played_cards, is_revolution)
+        beats_current_play = card_lib.compare_hands(
+            proposed_play, self.last_played_cards, is_revolution
+        )
         if not beats_current_play:
             return f"Your play of {card_lib.hand_as_emotes(proposed_play)} does not beat the current trick ({card_lib.hand_as_emotes(self.last_played_cards)})"
         return "ok"
+
     def advance_turn(self):
         current_player_index = self.players.index(self.current_player)
         new_player_index = (current_player_index + 1) % len(self.players)
         self.current_player = self.players[new_player_index]
         if self.current_player.is_active is False:
             self.advance_turn()
+
     def get_turn_order_string(self):
         turn_order_string = ""
         for player in self.players:

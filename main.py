@@ -92,13 +92,19 @@ async def debugaddmem(ctx):
 
 
 @bot.command(name="deal", description="deal new hands")
-async def deal(ctx, num_decks=1, num_jokers=2):
+async def deal(ctx, num_decks="1", num_jokers="2", paltry_deck = "0"):
+    num_decks = int(num_decks)
+    num_jokers = int(num_jokers)
+    paltry_deck = int(paltry_deck)
+    
     game = game_lib.find_game(ctx.channel.id, games)
     if game is False:
         await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
         return
     game.shuffle(num_decks, num_jokers)
     game.deal()
+    if paltry_deck == 1:
+        game.deal_paltry()
     await ctx.respond(f"Dealt hands of size {len(game.state.players[0].hand)} to all players.")
 
 
@@ -185,10 +191,7 @@ async def card_select_menu_callback_generator(ctx, card_select_menu, player_id =
             await ctx.send(f"{player} has played all their cards and is now out of the game.")
         if player_out == 2:
             await ctx.send(f"{player} has played all their cards and is now out of the game.")
-            win_string = "win order: "
-            for player in game.state.win_order:
-                win_string += f"{player} "
-            await interaction.response.send_message(f"game is over, standings: {win_string}")
+            await interaction.response.send_message(f"Game is over, standings: \n{game.get_player_titles()}")
             return
             # perform new game stuff + cleanup game state
         # TODO perform a verification process on user_picked_cards
