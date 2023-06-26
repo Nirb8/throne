@@ -134,8 +134,8 @@ async def trick(ctx):
     await ctx.send_response(f"{card_lib.hand_as_emotes(game.state.last_played_cards)}")
 
 
-async def card_select_menu_callback_generator(ctx, card_select_menu, player_id = None):
-    async def card_selection_callback(interaction):
+async def card_select_menu_gameplay_callback_generator(ctx, card_select_menu, player_id = None):
+    async def card_selection_callback_gameplay(interaction):
         game = game_lib.find_game(interaction.channel.id, games)
         # player = game_lib.find_player(interaction.user.id, game)
         player = game_lib.find_player(player_id, game)
@@ -172,7 +172,7 @@ async def card_select_menu_callback_generator(ctx, card_select_menu, player_id =
                 cards_not_held.append(card)
         if len(cards_not_held) > 0:
             not_held_emotes = card_lib.hand_as_emotes(cards_not_held)
-            await interaction.response.send_message(f"You are missing the cards: {not_held_emotes}.\nTry using the /p command again to refresh your card selection menu.")
+            await interaction.response.send_message(f"You are missing the cards: {not_held_emotes}.\nTry using the /p command again to refresh your card selection menu.", ephemeral = True)
             return
         # TODO intercept this with a joker value replacement method and purge the option cards
         user_picked_cards.sort()
@@ -198,7 +198,7 @@ async def card_select_menu_callback_generator(ctx, card_select_menu, player_id =
         # TODO if verification successful remove user_picked_cards from user's cards
         await interaction.response.send_message(f"{player.username} played: {card_emote_string}", allowed_mentions=discord.AllowedMentions.none())
         await ctx.send_followup(card_emote_string)
-    return card_selection_callback
+    return card_selection_callback_gameplay
 @bot.command()
 async def p(ctx, spoof_player=None):
     game = game_lib.find_game(ctx.channel.id, games)
@@ -223,24 +223,75 @@ async def p(ctx, spoof_player=None):
         turn_order_string = game.state.get_turn_order_string()
         await ctx.send_response(content=f"It's not your turn yet, the current player is {game.state.current_player}. The turn order is: \n{turn_order_string}", ephemeral=True)
         return
-    # TODO will probably want to extract into separate method
-    card_options = []
-    pass_option = discord.SelectOption(
-        label="Pass", emoji="🗿", value="0"
-    )
-    card_options.append(pass_option)
-    for card in player.hand:
-        new_option = discord.SelectOption(
-            label=card.get_human_readable(), emoji=card.get_emote(), value=str(id(card)))
-        card_options.append(new_option)
-    card_select_menu = discord.ui.Select(options=card_options)
+    card_select_menu = card_lib.build_select_menu_from_hand(True, player.hand)
 
-    card_select_menu.callback = await card_select_menu_callback_generator(ctx, card_select_menu, player_id)
+    card_select_menu.callback = await card_select_menu_gameplay_callback_generator(ctx, card_select_menu, player_id)
     card_select_menu.max_values = 13
     if len(player.hand) < 13:
         card_select_menu.max_values = len(player.hand)
     view = discord.ui.View()
     view.add_item(card_select_menu)
-    await ctx.send_response(content="**Card Selection Menu**", view=view, ephemeral=True)
+    await ctx.send_response(content=f"**Card Selection Menu** for **{player}**", view=view, ephemeral=True)
+
+@bot.command(name="trade", description="show currently played cards in big emote format")
+async def trade(ctx, spoof_player=None):
+    game = game_lib.find_game(ctx.channel.id, games)
+    if game is False:
+        await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
+        return
+    player_id = ctx.author.id
+    if spoof_player is not None and int(spoof_player)<len(game.state.players):
+        player_id = game.state.players[int(spoof_player)].player_id
+        await ctx.send(f"spoofing player {game_lib.find_player(player_id, game)}")
+    player = game_lib.find_player(player_id, game)
+    
+    card_select_menu = card_lib.build_select_menu_from_hand(False, player.hand)
+    
+    card_select_menu.callback = await card_select_menu_trading_callback_generator(ctx, card_select_menu, player_id)
+    card_select_menu.max_values = 2
+    card_select_menu.min_values = 1
+    if player.title == game_lib.Title("Biggest Loser"):
+        card_select_menu.min_values = 2
+    if player.title == game_lib.Title("Vice President") or player.title == game_lib.Title("Poor"):
+        card_select_menu.max_values = 1
+    view = discord.ui.View()
+    view.add_item(card_select_menu)
+    await ctx.send_response(content=f"**Trading Selection Menu** for **{player}**({player.title.value})", view=view, ephemeral=True)
+async def card_select_menu_trading_callback_generator(ctx, card_select_menu, player_id):
+    async def card_selection_callback_trading(interaction):
+        game = game_lib.find_game(interaction.channel.id, games)
+        # player = game_lib.find_player(interaction.user.id, game)
+        player = game_lib.find_player(player_id, game)
+        if player.title == game_lib.Title("*The Guy*"):
+            await interaction.response.send_message(content=f"You're The Guy👨, no trading for you", ephemeral=True)
+            return
+        if player.is_trading is False:
+            await interaction.response.send_message(content=f"You've already traded!", ephemeral=True)
+            return
+        user_picked_cards = []
+        for value in card_select_menu.values:
+            # convert reference id to Card object and append it to user_picked_cards
+            value_as_int = int(value)
+            user_picked_cards.append(ctypes.cast(
+                    value_as_int, ctypes.py_object).value)
+        user_picked_cards.sort()
+        card_emote_string = card_lib.hand_as_emotes(user_picked_cards)
+        
+        trading_message = card_lib.is_trade_legal(user_picked_cards, player.hand, player.title)
+        if trading_message != "ok":
+            await interaction.response.send_message(content=f"Your trade of {card_emote_string} is invalid. {trading_message}", ephemeral=True)
+            return
+        dest_player = game.find_trading_recipient(player)
+        
+        # the actual giving of cards
+        for card in user_picked_cards:
+            player.hand.remove(card)
+            dest_player.hand.append(card)
+        dest_player.hand.sort()
+        player.is_trading = False
+        
+        await interaction.response.send_message(content=f"Your trade of {card_emote_string} was successful.", ephemeral=True)
+    return card_selection_callback_trading
+
 
 bot.run(os.getenv('TOKEN'))

@@ -58,6 +58,7 @@ class Game:
         for card in played_cards:
             player.hand.remove(card)
         self.state.advance_turn()
+        self.do_special_effects(played_cards, player)
         # game ender
         if player.hand == [] and self.get_num_players_remaining() == 2:
             self.state.win_order.append(player)
@@ -67,13 +68,19 @@ class Game:
             if self.state.biggest_loser is not None:
                 self.state.win_order.append(self.state.biggest_loser)
             self.assign_titles()
+            self.state.trading_phase = True
             return 2
         if player.hand == []:
             self.state.win_order.append(player)
             player.is_active = False
             return 1
         return 0  # TODO replace with enums
-
+    def do_special_effects(self, played_cards, player):
+        hand_effective_rank = card_lib.get_hand_value(played_cards, self.state.is_revolution)
+        if hand_effective_rank == 5 or hand_effective_rank == -1:
+            self.state.last_played_cards = []
+            self.state.current_player = player
+        
     # return True if everyone else passed and a new trick is started, and False otherwise
     def make_pass(self):
         self.state.advance_turn()
@@ -99,14 +106,19 @@ class Game:
         first = self.state.win_order.pop(0)
         last = self.state.win_order.pop(len(self.state.win_order)-1)
         first.title = Title.PRESIDENT
+        first.is_trading = True
         last.title = Title.BIGGEST_LOSER
+        last.is_trading = True
         if len(self.state.win_order) > 1:
             second = self.state.win_order.pop(0)
-            second_to_last = self.state.win_order.pop(len(self.state.win_order)-1)
             second.title = Title.VICE_PRESIDENT
+            second.is_trading = True
+            second_to_last = self.state.win_order.pop(len(self.state.win_order)-1)
             second_to_last.title = Title.POOR
+            second_to_last.is_trading = True
         for player in self.state.win_order: 
             player.title = Title.THE_GUY
+            player.is_trading = False
     def get_player_titles(self):
         title_string = ""
         for player in self.state.players:
@@ -125,6 +137,25 @@ class Game:
             if player.title == Title.BIGGEST_LOSER:
                 title_string += f"😭 {player.get_title_string()}\n"
         return title_string
+    def find_trading_recipient(self, source_player):
+        target_title = Title("President")
+        if source_player.title == Title("President"):
+            target_title = Title("Biggest Loser")
+        if source_player.title == Title("Vice President"):
+            target_title = Title("Poor")
+        if source_player.title == Title("Poor"):
+            target_title = Title("Vice President")
+        target_player = self.get_player_by_title(target_title)
+        return target_player
+    def get_player_by_title(self, title):
+        for player in self.state.players:
+            if player.title == title:
+                return player
+    def is_trading_happening(self):
+        for player in self.state.players:
+            if player.is_trading:
+                return True
+        return False
 class Title(Enum):
     PRESIDENT = "President"
     VICE_PRESIDENT = "Vice President"
@@ -138,6 +169,7 @@ class Player:
         self.hand = []
         self.is_active = False
         self.title = Title.THE_GUY
+        self.is_trading = False
 
     def __str__(self):
         return self.username
