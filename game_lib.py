@@ -2,6 +2,13 @@ import card_lib
 import random
 from enum import Enum
 
+class MoveStatus(Enum):
+    Normal = 0
+    One_Player_Out = 1
+    All_Out = 2
+    Eight_Cut = 3
+    Jackback = 4
+    Revolution = 5
 class Game:
     def __init__(self, channel_id):
         self.channel_id = channel_id
@@ -53,12 +60,13 @@ class Game:
             self.state.current_player = self.state.players[0]
 
     def make_move(self, player, played_cards):
+        move_status_message = ""
         self.state.last_played_cards = played_cards
         self.state.last_played_player = player
         for card in played_cards:
             player.hand.remove(card)
         self.state.advance_turn()
-        self.do_special_effects(played_cards, player)
+        move_status_message += self.do_special_effects(played_cards, player)
         # game ender
         if player.hand == [] and self.get_num_players_remaining() == 2:
             self.state.win_order.append(player)
@@ -68,19 +76,46 @@ class Game:
             if self.state.biggest_loser is not None:
                 self.state.win_order.append(self.state.biggest_loser)
             self.assign_titles()
-            self.state.trading_phase = True
-            return 2
+            move_status_message += f"{player} has played all their cards and is now out of the game.\n"
+            move_status_message += f"Game is over, standings: \n{self.get_player_titles()}\n"
+            return move_status_message
         if player.hand == []:
             self.state.win_order.append(player)
             player.is_active = False
-            return 1
-        return 0  # TODO replace with enums
+            move_status_message += f"{player} has played all their cards and is now out of the game.\n"
+            if self.state.current_player == player:
+                self.state.advance_turn() # turn order the next person if the player went out on an 8 or joker
+            return move_status_message
+        return "ok"
     def do_special_effects(self, played_cards, player):
-        hand_effective_rank = card_lib.get_hand_value(played_cards, self.state.is_revolution)
-        if hand_effective_rank == 5 or hand_effective_rank == -1:
+        hand_effective_rank = card_lib.get_hand_value(played_cards, self.state.is_revolution())
+        if hand_effective_rank == 5:
             self.state.last_played_cards = []
             self.state.current_player = player
-        
+            self.state.is_jackback = False
+            return f"{player} played an Eight-valued hand, triggering an 8-Stop!\n"
+        if hand_effective_rank == -1:
+            self.state.last_played_cards = []
+            self.state.current_player = player
+            self.state.is_jackback = False
+            return f"{player} played a Joker-valued hand, auto-passing to their next turn...\n"
+        if hand_effective_rank == 8:
+            self.state.is_jackback = not self.state.is_jackback
+            return f"{player} played a Jack-valued hand, Jackback is now active! (Card values are reversed until the end of this trick!)"
+        if card_lib.same_rank_hand(played_cards) and len(played_cards) == 4:
+            self.state.num_revolutions += 1
+            if self.state.num_revolutions == 1:
+                return f"{player} played a 4-of-a-kind, Revolution has started! (Card values are reversed until the end of this game!)"
+            num_counters = self.state.num_revolutions - 1
+            counter_string = ""
+            for i in range(0, num_counters):
+                counter_string += "Counter-"
+            counter_revolution_string = f"{player} played a 4-of-a-kind, triggering a {counter_string}Revolution!! "
+            if self.state.num_revolutions % 2 == 0:
+                counter_revolution_string += "(Card values are back to normal!)"
+            if self.state.num_revolutions % 2 == 1:
+                counter_revolution_string += "(Card values are reversed again!)"
+            
     # return True if everyone else passed and a new trick is started, and False otherwise
     def make_pass(self):
         self.state.advance_turn()

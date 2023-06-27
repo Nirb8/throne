@@ -180,15 +180,17 @@ def hand_as_emotes(hand: list):
 
 # Checks if a play is a legal move, in a vacuum(does not test if it also beats the current play)
 def is_play_legal(proposed_play: list):
+    is_same_rank = same_rank_hand(proposed_play)
+    if is_same_rank and len(proposed_play) <= 4:
+        return True
+    return False  # TODO add staircasing check when card ranks differ
+def same_rank_hand(proposed_play):
     rank_to_match = proposed_play[0].rank
     is_same_rank = True
     for card in proposed_play:
         if card.rank != rank_to_match:
             is_same_rank = False
-    if is_same_rank and len(proposed_play) <= 4:
-        return True
-    return False  # TODO add staircasing check when card ranks differ
-
+    return is_same_rank
 
 def compare_hands(proposed_hand, target_hand, is_revolution):
     if target_hand == []:

@@ -186,16 +186,15 @@ async def card_select_menu_gameplay_callback_generator(ctx, card_select_menu, pl
         if play_message != "ok":
             await interaction.response.send_message(f"{play_message}", ephemeral=True)
             return
-        player_out = game.make_move(player, user_picked_cards)
-        if player_out == 1:
-            await ctx.send(f"{player} has played all their cards and is now out of the game.")
-        if player_out == 2:
-            await ctx.send(f"{player} has played all their cards and is now out of the game.")
-            await interaction.response.send_message(f"Game is over, standings: \n{game.get_player_titles()}")
-            return
-            # perform new game stuff + cleanup game state
-        # TODO perform a verification process on user_picked_cards
-        # TODO if verification successful remove user_picked_cards from user's cards
+        move_status_message = game.make_move(player, user_picked_cards)
+        if move_status_message != "ok":
+            await ctx.send(move_status_message)
+        
+        # if move_status == game_lib.MoveStatus.One_Player_Out:
+        #     await ctx.send(f"{player} has played all their cards and is now out of the game.")
+        # if move_status == game_lib.MoveStatus.All_Out:
+        #     await ctx.send(f"{player} has played all their cards and is now out of the game.")
+        #     await ctx.send_followup(f"Game is over, standings: \n{game.get_player_titles()}")
         await interaction.response.send_message(f"{player.username} played: {card_emote_string}", allowed_mentions=discord.AllowedMentions.none())
         await ctx.send_followup(card_emote_string)
     return card_selection_callback_gameplay
