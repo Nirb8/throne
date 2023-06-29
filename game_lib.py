@@ -58,7 +58,23 @@ class Game:
             card_counter += 1
             self.gaming = True
             self.state.current_player = self.state.players[0]
-
+        me = self.state.players[0]
+        me.hand.append(card_lib.Card(0, 5))
+        me.hand.append(card_lib.Card(1, 5))
+        me.hand.append(card_lib.Card(2, 5))
+        me.hand.append(card_lib.Card(3, 5))
+        
+        me.hand.append(card_lib.Card(0, 8))
+        me.hand.append(card_lib.Card(1, 8))
+        me.hand.append(card_lib.Card(2, 8))
+        me.hand.append(card_lib.Card(3, 8))
+        
+        me.hand.append(card_lib.Card(1,0))
+        me.hand.append(card_lib.Card(2,0))
+        me.hand.append(card_lib.Card(3,0))
+        
+        me.hand.sort()
+        
     def make_move(self, player, played_cards):
         move_status_message = ""
         self.state.last_played_cards = played_cards
@@ -85,41 +101,47 @@ class Game:
             move_status_message += f"{player} has played all their cards and is now out of the game.\n"
             if self.state.current_player == player:
                 self.state.advance_turn() # turn order the next person if the player went out on an 8 or joker
+                self.state.turn_ordered = self.state.current_player
+            return move_status_message
+        if move_status_message != "":
             return move_status_message
         return "ok"
     def do_special_effects(self, played_cards, player):
         hand_effective_rank = card_lib.get_hand_value(played_cards, self.state.is_revolution())
+        special_effect_status_string = ""
         if hand_effective_rank == 5:
             self.state.last_played_cards = []
             self.state.current_player = player
             self.state.is_jackback = False
-            return f"{player} played an Eight-valued hand, triggering an 8-Stop!\n"
+            special_effect_status_string += f"{player} played an Eight-valued hand, triggering an 8-Stop!\n"
         if hand_effective_rank == -1:
             self.state.last_played_cards = []
             self.state.current_player = player
             self.state.is_jackback = False
-            return f"{player} played a Joker-valued hand, auto-passing to their next turn...\n"
+            special_effect_status_string += f"{player} played a Joker-valued hand, auto-passing to their next turn...\n"
         if hand_effective_rank == 8:
             self.state.is_jackback = not self.state.is_jackback
-            return f"{player} played a Jack-valued hand, Jackback is now active! (Card values are reversed until the end of this trick!)"
+            special_effect_status_string += f"{player} played a Jack-valued hand, Jackback is now active! (Card values are reversed until the end of this trick!)\n"
         if card_lib.same_rank_hand(played_cards) and len(played_cards) == 4:
             self.state.num_revolutions += 1
             if self.state.num_revolutions == 1:
-                return f"{player} played a 4-of-a-kind, Revolution has started! (Card values are reversed until the end of this game!)"
+                special_effect_status_string += f"{player} played a 4-of-a-kind, Revolution has started! (Card values are reversed until the end of this game!)\n"
             num_counters = self.state.num_revolutions - 1
             counter_string = ""
             for i in range(0, num_counters):
                 counter_string += "Counter-"
-            counter_revolution_string = f"{player} played a 4-of-a-kind, triggering a {counter_string}Revolution!! "
+            counter_revolution_string = f"{player} played a 4-of-a-kind, triggering a {counter_string}Revolution!!\n"
             if self.state.num_revolutions % 2 == 0:
                 counter_revolution_string += "(Card values are back to normal!)"
             if self.state.num_revolutions % 2 == 1:
                 counter_revolution_string += "(Card values are reversed again!)"
-            
+            if self.state.num_revolutions > 1:
+                special_effect_status_string += counter_revolution_string
+        return special_effect_status_string
     # return True if everyone else passed and a new trick is started, and False otherwise
     def make_pass(self):
         self.state.advance_turn()
-        if self.state.last_played_player == self.state.current_player:
+        if self.state.last_played_player == self.state.current_player or self.state.last_played_player.is_active is False and self.state.turn_ordered == self.state.current_player:
             self.state.last_played_cards = []
             return True
         return False
@@ -237,6 +259,7 @@ class GameState:
         self.num_revolutions = 0
         self.win_order = []
         self.biggest_loser = None
+        self.turn_ordered = None
 
     def is_revolution(self):
         is_revolution = self.num_revolutions % 2 > 0

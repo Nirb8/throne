@@ -115,6 +115,12 @@ async def stats(ctx):
         await ctx.respond("A game doesn't exist in this channel yet, create one with /makegame")
         return
     stat_string = ""
+    if game.state.num_revolutions % 2 == 1 and game.state.is_jackback is False:
+        stat_string += "**REVOLUTION IS UNDERWAY** (card values are reversed)\n"
+    if game.state.num_revolutions % 2 == 1 and game.state.is_jackback is True:
+        stat_string += "**REVOLUTION IS UNDERWAY** but Jackback is countering it (card values are normal)\n"
+    if game.state.num_revolutions % 2 == 0 and game.state.is_jackback is True:
+        stat_string += "Jackback is active (card values are reversed until the end of this trick)\n"
     if game.state.last_played_cards != []:
         stat_string += f"Current Trick: {card_lib.hand_as_emotes(game.state.last_played_cards)} played by {game.state.last_played_player}\n"
     stat_string += f"Current Player: {game.state.current_player.username}\n"
